@@ -8,6 +8,8 @@ log/
 .local/
 downloads/
 .simulation-gazebo/
+__pycache__/
+*.pyc
 
 # Local WSL distribution and external source trees
 .wsl/

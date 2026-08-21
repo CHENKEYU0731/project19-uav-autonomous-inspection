@@ -1,0 +1,17 @@
+{
+  "coordinate_frame": "NED",
+  "full_mission_setpoint_error": {
+    "sample_count": 1181,
+    "mean_m": 1.2064691003223602,
+    "rmse_m": 1.5893088344202175,
+    "max_m": 4.021535537784938
+  },
+  "steady_state_error": {
+    "definition": "last 1.0 s of each of 6 target segments",
+    "segment_count": 6,
+    "sample_count": 300,
+    "mean_m": 0.118588607633516,
+    "rmse_m": 0.13297774515392605,
+    "max_m": 0.2727868584253973
+  }
+}

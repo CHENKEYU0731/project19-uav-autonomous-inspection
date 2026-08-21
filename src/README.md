@@ -10,4 +10,7 @@ ROS 2 Humble 安装并验收后，使用 `ros2 pkg create` 在此目录创建项
 - `drone_interfaces`
 - `drone_sim`
 
-M0 阶段不创建空壳功能包；每个包在首次实现对应功能时创建，并同时加入最小构建测试。
+功能包随里程碑首次实现时创建，不预建空壳包：
+
+- M1 已创建 `drone_controller` 和 `drone_bringup`
+- 其余功能包在对应里程碑实现时创建，并同时加入最小构建测试
