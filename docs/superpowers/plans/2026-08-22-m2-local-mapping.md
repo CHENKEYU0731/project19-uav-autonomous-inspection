@@ -88,7 +88,7 @@
 - Create: `src/drone_perception/src/depth_grid_mapper.cpp`
 - Create: `src/drone_perception/test/test_depth_grid_mapper.cpp`
 
-- [ ] **Step 1: Write failing geometry and validation tests**
+- [x] **Step 1: Write failing geometry and validation tests**
 
   Cover these behaviors with exact assertions:
 
@@ -101,7 +101,7 @@
   TEST(DepthGridMapperTest, MovesOriginWithVehicleWithoutMovingWorldObstacle);
   ```
 
-- [ ] **Step 2: Run the test target and verify failure**
+- [x] **Step 2: Run the test target and verify failure**
 
   Run:
 
@@ -111,7 +111,7 @@
 
   Expected: failure because the mapper API is not implemented.
 
-- [ ] **Step 3: Implement the minimal pure C++ mapper**
+- [x] **Step 3: Implement the minimal pure C++ mapper**
 
   Define focused value types and one state-free operation:
 
@@ -140,7 +140,7 @@
 
   Use the ROS optical convention (`z` forward, `x` right, `y` down), transform every selected endpoint into `map`, filter by height relative to the base, trace free cells with integer Bresenham, and mark valid endpoints occupied.
 
-- [ ] **Step 4: Build and run mapper tests**
+- [x] **Step 4: Build and run mapper tests**
 
   Run:
 
