@@ -1,0 +1,23 @@
+# Colcon outputs
+build/
+install/
+log/
+
+# Local caches and downloads
+.cache/
+.local/
+downloads/
+.simulation-gazebo/
+
+# Local WSL distribution and external source trees
+.wsl/
+external/PX4-Autopilot/
+external/Micro-XRCE-DDS-Agent/
+src/px4_msgs/
+src/px4_ros_com/
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
