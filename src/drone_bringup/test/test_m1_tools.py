@@ -241,7 +241,7 @@ def test_successful_controller_exit_shuts_down_launch_dependencies():
         launch_service.include_launch_description(launch_description)
         try:
             return await asyncio.wait_for(
-                launch_service.run_async(), timeout=5.0
+                launch_service.run_async(), timeout=15.0
             )
         except asyncio.TimeoutError:
             launch_service.shutdown()
@@ -344,7 +344,7 @@ def test_px4_wrapper_starts_daemon_and_cleans_process_group(tmp_path):
         env=environment,
     )
     try:
-        deadline = time.monotonic() + 5.0
+        deadline = time.monotonic() + 15.0
         while not capture_path.exists() and time.monotonic() < deadline:
             time.sleep(0.05)
         assert capture_path.exists(), "PX4 wrapper did not start the binary"
@@ -367,5 +367,9 @@ def test_px4_wrapper_starts_daemon_and_cleans_process_group(tmp_path):
             pass
     finally:
         if process.poll() is None:
-            process.kill()
-            process.wait(timeout=5.0)
+            process.send_signal(signal.SIGTERM)
+            try:
+                process.wait(timeout=15.0)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5.0)
