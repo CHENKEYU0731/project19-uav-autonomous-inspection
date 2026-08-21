@@ -62,7 +62,7 @@ if [[ ! -x "${px4_binary}" ]]; then
 fi
 
 cd "${rootfs_directory}"
-PX4_SIM_MODEL=gz_x500 GZ_IP=127.0.0.1 \
+PX4_SIM_MODEL="${PX4_SIM_MODEL:-gz_x500}" GZ_IP="${GZ_IP:-127.0.0.1}" \
   setsid "${px4_binary}" -d &
 px4_pid="$!"
 wait "${px4_pid}"

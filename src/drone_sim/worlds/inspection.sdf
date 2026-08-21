@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.9">
+  <world name="inspection">
+    <physics type="ode">
+      <max_step_size>0.004</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>250</real_time_update_rate>
+    </physics>
+    <gravity>0 0 -9.8</gravity>
+    <magnetic_field>6e-06 2.3e-05 -4.2e-05</magnetic_field>
+    <atmosphere type="adiabatic"/>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <scene>
+      <grid>true</grid>
+      <ambient>0.45 0.45 0.45 1</ambient>
+      <background>0.72 0.78 0.82 1</background>
+      <shadows>true</shadows>
+    </scene>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>30 30</size></plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>30 30</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.55 0.58 0.60 1</ambient>
+            <diffuse>0.55 0.58 0.60 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="left_wall">
+      <static>true</static>
+      <pose>5 -4 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>12 0.2 3</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>12 0.2 3</size></box></geometry><material><diffuse>0.28 0.32 0.36 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="right_wall">
+      <static>true</static>
+      <pose>5 4 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>12 0.2 3</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>12 0.2 3</size></box></geometry><material><diffuse>0.28 0.32 0.36 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="door_left">
+      <static>true</static>
+      <pose>5 -2.5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.2 3 3</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.2 3 3</size></box></geometry><material><diffuse>0.78 0.80 0.82 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="door_right">
+      <static>true</static>
+      <pose>5 2.5 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.2 3 3</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.2 3 3</size></box></geometry><material><diffuse>0.78 0.80 0.82 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="door_top">
+      <static>true</static>
+      <pose>5 0 2.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.2 2 1</size></box></geometry></collision>
+        <visual name="visual"><geometry><box><size>0.2 2 1</size></box></geometry><material><diffuse>0.78 0.80 0.82 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="column_left">
+      <static>true</static>
+      <pose>3 -2 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><cylinder><radius>0.35</radius><length>3</length></cylinder></geometry></collision>
+        <visual name="visual"><geometry><cylinder><radius>0.35</radius><length>3</length></cylinder></geometry><material><diffuse>0.75 0.20 0.16 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <model name="column_right">
+      <static>true</static>
+      <pose>3 2 1.5 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><cylinder><radius>0.35</radius><length>3</length></cylinder></geometry></collision>
+        <visual name="visual"><geometry><cylinder><radius>0.35</radius><length>3</length></cylinder></geometry><material><diffuse>0.75 0.20 0.16 1</diffuse></material></visual>
+      </link>
+    </model>
+
+    <light name="sun" type="directional">
+      <pose>0 0 10 0 0 0</pose>
+      <cast_shadows>true</cast_shadows>
+      <direction>-0.3 0.2 -0.9</direction>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation><range>1000</range><constant>0.9</constant><linear>0.01</linear><quadratic>0.001</quadratic></attenuation>
+    </light>
+
+    <spherical_coordinates>
+      <surface_model>EARTH_WGS84</surface_model>
+      <world_frame_orientation>ENU</world_frame_orientation>
+      <latitude_deg>47.397971057728974</latitude_deg>
+      <longitude_deg>8.546163739800146</longitude_deg>
+      <elevation>0</elevation>
+    </spherical_coordinates>
+  </world>
+</sdf>
