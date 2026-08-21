@@ -251,7 +251,7 @@
 - Modify: `AGENTS.md`
 - Modify: `项目方案-ROS2无人机自主巡检系统.md`
 
-- [ ] **Step 1: Add the offline evidence validator**
+- [x] **Step 1: Add the offline evidence validator**
 
   The script must reject missing/non-finite data and prove from rosbag messages that:
 
