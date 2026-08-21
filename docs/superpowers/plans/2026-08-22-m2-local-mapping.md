@@ -161,7 +161,7 @@
 - Create: `src/drone_perception/src/depth_grid_node.cpp`
 - Create: `src/drone_perception/test/test_frame_conversions.cpp`
 
-- [ ] **Step 1: Write failing NED/FRD conversion tests**
+- [x] **Step 1: Write failing NED/FRD conversion tests**
 
   Assert the fixed transforms:
 
@@ -173,7 +173,7 @@
 
   Cover identity attitude, 90-degree NED yaw, non-finite input, wrong `pose_frame`, and quaternion normalization.
 
-- [ ] **Step 2: Implement and verify frame conversion**
+- [x] **Step 2: Implement and verify frame conversion**
 
   Expose:
 
@@ -186,15 +186,15 @@
 
   Run `colcon test --packages-select drone_perception --event-handlers console_direct+` and require all conversion tests to pass.
 
-- [ ] **Step 3: Implement the TF broadcaster**
+- [x] **Step 3: Implement the TF broadcaster**
 
   Subscribe to `/fmu/out/vehicle_odometry` with `SensorDataQoS`. Publish `map -> base_link` from the tested conversion and publish the fixed `base_link -> camera_optical_frame` transform with translation `(0.13233, 0.0, 0.26078)` and the standard FLU-to-optical rotation `roll=-pi/2, pitch=0, yaw=-pi/2`. Reject unsupported frames and non-finite samples with throttled warnings.
 
-- [ ] **Step 4: Implement the depth-grid node and diagnostics**
+- [x] **Step 4: Implement the depth-grid node and diagnostics**
 
   Subscribe to `/camera/depth/image_raw` and `/camera/depth/camera_info`, require `32FC1`, and use tf2 to obtain `map <- camera_optical_frame` and `map <- base_link`. Publish `/local_occupancy_grid` plus `/drone_perception/diagnostics` with `processing_latency_ms`, `output_rate_hz`, valid depth count, and occupied cell count. Parameter validation must fail startup for non-positive sizes, ranges, or stride.
 
-- [ ] **Step 5: Build and run all perception tests**
+- [x] **Step 5: Build and run all perception tests**
 
   Run:
 

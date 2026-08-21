@@ -51,6 +51,8 @@ struct GridData
   std::vector<std::int8_t> cells;
 };
 
+void validate_mapper_config(const MapperConfig & config);
+
 GridData build_grid(
   const std::vector<float> & depth,
   std::uint32_t image_width,

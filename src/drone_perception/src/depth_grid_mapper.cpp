@@ -61,25 +61,7 @@ void validate_inputs(
   const Pose3D & base_pose,
   const MapperConfig & config)
 {
-  if (!finite(config.resolution_m) || config.resolution_m <= 0.0 ||
-    !finite(config.width_m) || config.width_m <= 0.0 ||
-    !finite(config.height_m) || config.height_m <= 0.0)
-  {
-    throw std::invalid_argument("grid resolution and dimensions must be finite and positive");
-  }
-  if (!finite(config.min_depth_m) || !finite(config.max_depth_m) ||
-    config.min_depth_m <= 0.0 || config.max_depth_m <= config.min_depth_m)
-  {
-    throw std::invalid_argument("depth range must be finite, positive, and increasing");
-  }
-  if (!finite(config.min_relative_height_m) || !finite(config.max_relative_height_m) ||
-    config.max_relative_height_m < config.min_relative_height_m)
-  {
-    throw std::invalid_argument("height slice must be finite and increasing");
-  }
-  if (config.pixel_stride <= 0) {
-    throw std::invalid_argument("pixel stride must be positive");
-  }
+  validate_mapper_config(config);
   if (!finite(intrinsics.fx) || !finite(intrinsics.fy) ||
     !finite(intrinsics.cx) || !finite(intrinsics.cy) ||
     intrinsics.fx <= 0.0 || intrinsics.fy <= 0.0)
@@ -174,6 +156,38 @@ void trace_ray(GridData & grid, const GridCell start, const GridCell endpoint)
 }
 
 }  // namespace
+
+void validate_mapper_config(const MapperConfig & config)
+{
+  if (!finite(config.resolution_m) || config.resolution_m <= 0.0 ||
+    !finite(config.width_m) || config.width_m <= 0.0 ||
+    !finite(config.height_m) || config.height_m <= 0.0)
+  {
+    throw std::invalid_argument("grid resolution and dimensions must be finite and positive");
+  }
+  if (!finite(config.min_depth_m) || !finite(config.max_depth_m) ||
+    config.min_depth_m <= 0.0 || config.max_depth_m <= config.min_depth_m)
+  {
+    throw std::invalid_argument("depth range must be finite, positive, and increasing");
+  }
+  if (!finite(config.min_relative_height_m) || !finite(config.max_relative_height_m) ||
+    config.max_relative_height_m < config.min_relative_height_m)
+  {
+    throw std::invalid_argument("height slice must be finite and increasing");
+  }
+  if (config.pixel_stride <= 0) {
+    throw std::invalid_argument("pixel stride must be positive");
+  }
+
+  const double width_cells = std::ceil(config.width_m / config.resolution_m);
+  const double height_cells = std::ceil(config.height_m / config.resolution_m);
+  if (width_cells > static_cast<double>(std::numeric_limits<int>::max()) ||
+    height_cells > static_cast<double>(std::numeric_limits<int>::max()) ||
+    width_cells * height_cells > static_cast<double>(kMaxGridCells))
+  {
+    throw std::invalid_argument("grid dimensions exceed the local-map safety limit");
+  }
+}
 
 GridData build_grid(
   const std::vector<float> & depth,
