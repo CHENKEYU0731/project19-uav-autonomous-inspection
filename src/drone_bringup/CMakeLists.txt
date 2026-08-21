@@ -24,6 +24,12 @@ if(BUILD_TESTING)
       "PYTEST_ADDOPTS=-s"
       "PYTHONNOUSERSITE=1"
       "ROS_LOG_DIR=${CMAKE_CURRENT_BINARY_DIR}/ros-logs")
+  ament_add_pytest_test(
+    test_m2_launch test/test_m2_launch.py
+    ENV
+      "PYTEST_ADDOPTS=-s"
+      "PYTHONNOUSERSITE=1"
+      "ROS_LOG_DIR=${CMAKE_CURRENT_BINARY_DIR}/ros-logs")
   if(_original_pytest_addopts)
     set(ENV{PYTEST_ADDOPTS} "${_original_pytest_addopts}")
   else()

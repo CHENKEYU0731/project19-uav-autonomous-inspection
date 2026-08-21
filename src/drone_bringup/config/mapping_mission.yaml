@@ -1,0 +1,14 @@
+waypoint_controller:
+  ros__parameters:
+    use_sim_time: true
+    takeoff_altitude_m: 2.5
+    acceptance_radius_m: 0.3
+    stable_time_s: 1.0
+    warmup_setpoint_count: 10
+    startup_timeout_s: 120.0
+    command_timeout_s: 10.0
+    segment_timeout_s: 30.0
+    landing_timeout_s: 30.0
+    position_timeout_s: 0.5
+    status_timeout_s: 2.0
+    waypoint_offsets_xy: [1.0, 0.0, 2.0, 0.0, 2.0, 1.0, 1.0, 1.0]

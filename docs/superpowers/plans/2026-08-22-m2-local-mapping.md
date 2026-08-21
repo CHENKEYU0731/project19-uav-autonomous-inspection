@@ -217,15 +217,15 @@
 - Modify: `src/drone_bringup/CMakeLists.txt`
 - Modify: `src/drone_bringup/package.xml`
 
-- [ ] **Step 1: Write failing launch-contract tests**
+- [x] **Step 1: Write failing launch-contract tests**
 
   Parse the launch source and installed package metadata to require Gazebo server, Micro XRCE-DDS Agent, PX4 wrapper, clock/depth/camera-info bridges, TF broadcaster, mapper, optional RViz2 with a project-owned config, mission controller, project-local rosbag output, and required-process exit handling.
 
-- [ ] **Step 2: Implement the launch file**
+- [x] **Step 2: Implement the launch file**
 
   Launch the project world in server-only mode, extend `GZ_SIM_RESOURCE_PATH` with project and PX4 models, start PX4 in standalone mode with `gz_x500_depth_project`, bridge `/clock`, depth image, and camera info from Gazebo to ROS, set `use_sim_time=true`, start TF and mapping nodes, optionally show RViz2 with `map` as the fixed frame, optionally run the safe M1 controller route, and record M2 topics under `log/m2/mapping_YYYYMMDD_HHMMSS`.
 
-- [ ] **Step 3: Verify launch contracts and package tests**
+- [x] **Step 3: Verify launch contracts and package tests**
 
   Run:
 
