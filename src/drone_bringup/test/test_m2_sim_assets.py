@@ -43,6 +43,23 @@ def test_inspection_world_has_collision_matched_obstacles():
     assert world is not None
     assert world.attrib["name"] == "inspection"
 
+    plugin_filenames = {
+        plugin.attrib["filename"] for plugin in world.findall("plugin")
+    }
+    assert {
+        "gz-sim-physics-system",
+        "gz-sim-user-commands-system",
+        "gz-sim-scene-broadcaster-system",
+        "gz-sim-contact-system",
+        "gz-sim-imu-system",
+        "gz-sim-air-pressure-system",
+        "gz-sim-air-speed-system",
+        "gz-sim-apply-link-wrench-system",
+        "gz-sim-navsat-system",
+        "gz-sim-magnetometer-system",
+        "gz-sim-sensors-system",
+    } <= plugin_filenames
+
     required_obstacles = {
         "left_wall",
         "right_wall",

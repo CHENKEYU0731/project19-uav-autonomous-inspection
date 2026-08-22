@@ -4,14 +4,16 @@
 
 ## 当前状态
 
-当前里程碑：**M2 - 感知与局部建图（待实施）**。
+当前里程碑：**M2 - 感知与局部建图（已验收）**。下一阶段为 M3 路径规划与
+自主避障；M3 尚未开始。
 
 2026-08-22 已在本机直接验收 M0 和 M1：除 PX4/Gazebo/ROS 2 基线外，
 一条 launch 命令可完成起飞、4 个方形航点、返回起点和自动降落。
 6 个稳定到达点的平均位置误差为 `0.127 m`；每个目标段最后 1 秒共 300 个
 稳态样本的平均误差为 `0.119 m`，RMSE 为 `0.133 m`。
-直接证据和口径限制见 [`docs/m0-environment-audit.md`](docs/m0-environment-audit.md)
-与 [`docs/m1-waypoint-audit.md`](docs/m1-waypoint-audit.md)。
+直接证据和口径限制见 [`docs/m0-environment-audit.md`](docs/m0-environment-audit.md)、
+[`docs/m1-waypoint-audit.md`](docs/m1-waypoint-audit.md) 与
+[`docs/m2-local-mapping-audit.md`](docs/m2-local-mapping-audit.md)。
 
 ## 固定版本
 
@@ -85,6 +87,8 @@ sudo apt-get install -y \
   ros-humble-plotjuggler-ros \
   ros-humble-ros-gzharmonic \
   python3-colcon-common-extensions \
+  python3-matplotlib \
+  python3-pil \
   python3-vcstool
 ```
 
@@ -127,11 +131,11 @@ source /opt/project19/scripts/project-env.sh
 colcon build --symlink-install
 ```
 
-当前预期构建 4 个包：`px4_msgs`、`px4_ros_com`、`drone_controller` 和
-`drone_bringup`：
+当前预期构建 6 个包：`px4_msgs`、`px4_ros_com`、`drone_sim`、
+`drone_perception`、`drone_controller` 和 `drone_bringup`：
 
 ```text
-Summary: 4 packages finished
+Summary: 6 packages finished
 ```
 
 可执行上游测试：
@@ -152,8 +156,9 @@ colcon test-result --test-result-base build/drone_controller --verbose
 colcon test-result --test-result-base build/drone_bringup --verbose
 ```
 
-当前项目结果为：`drone_controller` 9 tests、`drone_bringup` 10 tests，均为
-0 errors、0 failures、0 skipped；其中分别包含 8 个 GTest 和 9 个 pytest 用例。
+M2 包级复核包含 `drone_perception` 的 17 个 GTest，以及 `drone_bringup` 的
+13 个 M1/包装器 pytest、4 个仿真资产 pytest、5 个 M2 launch pytest 和 19 个
+证据分析 pytest，均通过。完整命令和结果见 M2 审计。
 
 ## M0 运行验收
 
@@ -297,3 +302,84 @@ python3 scripts/plot_m1_trajectory.py \
 - [x] 一条命令自主完成起飞、4 个航点、返航和降落
 - [x] 稳态航点误差已量化，300 个样本平均值 `0.119 m`，小于 0.3 m
 - [x] 项目代码构建无警告，航点判断逻辑有单元测试
+
+## M2 一键局部建图
+
+每次 WSL 重启后先恢复项目挂载并加载环境：
+
+```bash
+cd "/mnt/e/codex-work space/project19-无人机开发agent"
+bash scripts/mount-project.sh
+source /opt/project19/scripts/project-env.sh
+```
+
+随后一条命令启动 Gazebo 巡检场景、DDS Agent、PX4 SITL、深度相机桥接、TF、
+局部占据栅格、4 航点安全任务和 rosbag：
+
+```bash
+ros2 launch drone_bringup local_mapping.launch.py use_rviz:=true
+```
+
+默认使用 0.1 m 分辨率、12 m x 12 m 的滚动 2D 栅格，并将相机高度上下各
+0.5 m 的深度点投影到 `map`。TF 链为
+`map -> base_link -> camera_optical_frame`。
+
+可选 launch 参数：
+
+```bash
+# 同时打开 RViz2 项目视图
+ros2 launch drone_bringup local_mapping.launch.py use_rviz:=true
+
+# 仅持续建图，不执行自动航点任务
+ros2 launch drone_bringup local_mapping.launch.py run_mission:=false
+
+# 调试时关闭 rosbag
+ros2 launch drone_bringup local_mapping.launch.py record_bag:=false
+```
+
+无 QGroundControl 的 M2 SITL 通过项目内 `scripts/px4-headless-rcS` 在官方启动
+脚本完成后，对当前进程执行 `param set-default NAV_DLL_ACT 0`。这解决 x500
+airframe 覆盖早期环境参数的问题，不保存参数、不修改 PX4 外部源码，且禁止用于
+真机。
+
+launch 成功结束后，从本次实际生成的 bag 重新生成指标、静态图和本地 GIF：
+
+```bash
+export PYTHONNOUSERSITE=1
+accepted_bag="$(find log/m2 -mindepth 1 -maxdepth 1 -type d \
+  -name 'mapping_*' | sort | tail -n 1)"
+test -n "${accepted_bag}"
+python3 scripts/analyze_m2_mapping.py \
+  "${accepted_bag}" \
+  --metrics docs/assets/m2-mapping-metrics.json \
+  --plot docs/assets/m2-local-grid.png \
+  --animation log/m2/m2-local-mapping.gif
+```
+
+`log/` 不提交到 Git；正式验收所用 bag、运行日志和 GIF 的精确路径、哈希与口径见
+M2 审计。
+
+![M2 悬停及移动后的局部栅格对齐](docs/assets/m2-local-grid.png)
+
+![M2 RViz 局部占据栅格](docs/assets/m2-rviz.png)
+
+本次直接验收结果：
+
+- 连续悬停窗口 12 帧、1.1 s，平均速度 0.194 m/s、垂直范围 0.024 m，
+  已占据单元与 Gazebo 右侧墙体对齐率 100.0%
+- 平移 2.237 m 后窗口 69 帧，对齐率 100.0%，证明地图随位姿更新
+- 354 帧栅格中位和全段平均频率均为 10.00 Hz，P95 与最大消息间隔均为 0.10 s
+- 处理延迟中位数 0.988 ms，P95 1.561 ms，最大 2.030 ms
+- 栅格中心跟随 `base_link` 的最大误差 0.0086 m，最近 TF 最大时间差 7.997 ms
+- RViz 实际显示 120 x 120 占据栅格与 TF；WSLg/Mesa 首帧 shader 警告为已知
+  非阻塞可视化限制，详情见 M2 审计
+- 自动任务完成 4 个航点、返航、降落和解除武装，全程未记录 failsafe，顶层
+  launch 状态码为 0
+- 本地 `900 x 600`、60 帧 GIF 已保存到 `log/m2/m2-local-mapping.gif`
+- 建图节点尚无深度输入超时看门狗；M3 规划器必须按消息年龄拒绝陈旧地图
+
+## M2 验收结果
+
+- [x] 悬停时 RViz 栅格与 Gazebo 场景障碍物一致
+- [x] 移动 2.237 m 后地图持续更新且无明显 TF 错位
+- [x] 建图中位及全段平均频率 10.00 Hz，且已记录中位、P95 和最大处理延迟

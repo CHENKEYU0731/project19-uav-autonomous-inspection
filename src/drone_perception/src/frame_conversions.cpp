@@ -10,6 +10,11 @@ namespace drone_perception
 namespace
 {
 
+constexpr std::int64_t kNanosecondsPerMicrosecond = 1'000;
+constexpr std::int64_t kMaximumSampleAgeNs = 500'000'000;
+constexpr std::int64_t kMaximumFutureLeadNs = 100'000'000;
+constexpr std::int64_t kRelockOffsetToleranceNs = 100'000'000;
+
 using Matrix3 = std::array<std::array<double, 3>, 3>;
 
 Matrix3 multiply(const Matrix3 & left, const Matrix3 & right)
@@ -86,6 +91,63 @@ std::array<double, 4> matrix_to_quaternion_xyzw(const Matrix3 & matrix)
 }
 
 }  // namespace
+
+std::optional<std::int64_t> Px4TimestampAligner::align(
+  const std::uint64_t timestamp_sample_us,
+  const std::int64_t arrival_ros_ns)
+{
+  if (arrival_ros_ns <= 0 || timestamp_sample_us == 0U ||
+    timestamp_sample_us >
+    static_cast<std::uint64_t>(
+      std::numeric_limits<std::int64_t>::max() / kNanosecondsPerMicrosecond) ||
+    (previous_sample_us_ != 0U && timestamp_sample_us <= previous_sample_us_))
+  {
+    pending_offset_ns_.reset();
+    return std::nullopt;
+  }
+
+  const auto sample_ns =
+    static_cast<std::int64_t>(timestamp_sample_us) * kNanosecondsPerMicrosecond;
+  const auto candidate_offset_ns = arrival_ros_ns - sample_ns;
+  if (!offset_ns_.has_value()) {
+    offset_ns_ = candidate_offset_ns;
+  }
+
+  std::int64_t aligned_ns;
+  if (arrival_ros_ns < previous_arrival_ros_ns_) {
+    offset_ns_ = candidate_offset_ns;
+    pending_offset_ns_.reset();
+    aligned_ns = arrival_ros_ns;
+  } else {
+    const auto offset_ns = offset_ns_.value();
+    if ((offset_ns > 0 && sample_ns > std::numeric_limits<std::int64_t>::max() - offset_ns) ||
+      (offset_ns < 0 && sample_ns < std::numeric_limits<std::int64_t>::min() - offset_ns))
+    {
+      pending_offset_ns_.reset();
+      return std::nullopt;
+    }
+    aligned_ns = sample_ns + offset_ns;
+    const std::int64_t age_ns = arrival_ros_ns - aligned_ns;
+    if (age_ns > kMaximumSampleAgeNs || age_ns < -kMaximumFutureLeadNs) {
+      const bool offset_is_confirmed = pending_offset_ns_.has_value() &&
+        std::abs(
+        static_cast<long double>(candidate_offset_ns) - pending_offset_ns_.value()) <=
+        kRelockOffsetToleranceNs;
+      if (!offset_is_confirmed) {
+        pending_offset_ns_ = candidate_offset_ns;
+        return std::nullopt;
+      }
+      offset_ns_ = candidate_offset_ns;
+      pending_offset_ns_.reset();
+      aligned_ns = arrival_ros_ns;
+    } else {
+      pending_offset_ns_.reset();
+    }
+  }
+  previous_sample_us_ = timestamp_sample_us;
+  previous_arrival_ros_ns_ = arrival_ros_ns;
+  return aligned_ns;
+}
 
 std::optional<Pose3D> ned_frd_to_enu_flu(
   const std::array<float, 3> & position_ned,

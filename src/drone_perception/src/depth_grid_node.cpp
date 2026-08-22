@@ -32,6 +32,7 @@ namespace drone_perception
 {
 
 using SteadyClock = std::chrono::steady_clock;
+constexpr std::size_t kMaximumDepthPixels = 4'000'000;
 
 std::string fixed_precision(const double value)
 {
@@ -107,7 +108,9 @@ private:
   void handle_camera_info(const sensor_msgs::msg::CameraInfo::SharedPtr message)
   {
     const CameraIntrinsics intrinsics{message->k[0], message->k[4], message->k[2], message->k[5]};
-    if (message->width == 0U || message->height == 0U || message->header.frame_id.empty() ||
+    if (message->width == 0U || message->height == 0U ||
+      message->height > kMaximumDepthPixels / message->width ||
+      message->header.frame_id.empty() ||
       !std::isfinite(intrinsics.fx) || !std::isfinite(intrinsics.fy) ||
       !std::isfinite(intrinsics.cx) || !std::isfinite(intrinsics.cy) ||
       intrinsics.fx <= 0.0 || intrinsics.fy <= 0.0)
@@ -129,6 +132,8 @@ private:
       *reinterpret_cast<const std::uint8_t *>(&endian_probe) == 0U;
     const std::size_t row_bytes = static_cast<std::size_t>(image.width) * sizeof(float);
     return image.encoding == "32FC1" &&
+           image.width > 0U && image.height > 0U &&
+           image.height <= kMaximumDepthPixels / image.width &&
            static_cast<bool>(image.is_bigendian) == host_is_big_endian &&
            image.step >= row_bytes &&
            image.height <= std::numeric_limits<std::size_t>::max() / image.step &&

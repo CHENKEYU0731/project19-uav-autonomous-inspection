@@ -45,9 +45,11 @@ void validate_pose(const Pose3D & pose)
     throw std::invalid_argument("pose values must be finite");
   }
 
-  const double quaternion_norm = std::sqrt(
-    pose.qx * pose.qx + pose.qy * pose.qy + pose.qz * pose.qz + pose.qw * pose.qw);
-  if (quaternion_norm <= std::numeric_limits<double>::epsilon()) {
+  const double quaternion_norm = std::hypot(
+    std::hypot(pose.qx, pose.qy), std::hypot(pose.qz, pose.qw));
+  if (!finite(quaternion_norm) ||
+    quaternion_norm <= std::numeric_limits<double>::epsilon())
+  {
     throw std::invalid_argument("pose quaternion norm must be positive");
   }
 }
@@ -80,8 +82,8 @@ void validate_inputs(
 
 Point3D rotate_and_translate(const Point3D & point, const Pose3D & pose)
 {
-  const double norm = std::sqrt(
-    pose.qx * pose.qx + pose.qy * pose.qy + pose.qz * pose.qz + pose.qw * pose.qw);
+  const double norm = std::hypot(
+    std::hypot(pose.qx, pose.qy), std::hypot(pose.qz, pose.qw));
   const double qx = pose.qx / norm;
   const double qy = pose.qy / norm;
   const double qz = pose.qz / norm;
@@ -121,7 +123,51 @@ std::size_t cell_index(const GridData & grid, const int column, const int row)
   return static_cast<std::size_t>(row) * grid.width + static_cast<std::size_t>(column);
 }
 
-void trace_ray(GridData & grid, const GridCell start, const GridCell endpoint)
+std::optional<GridCell> clip_endpoint_to_grid(
+  const GridData & grid, const Point3D & start, const Point3D & endpoint)
+{
+  const double maximum_x =
+    grid.origin_x + static_cast<double>(grid.width) * grid.resolution_m;
+  const double maximum_y =
+    grid.origin_y + static_cast<double>(grid.height) * grid.resolution_m;
+  double scale = 1.0;
+
+  const auto clip_axis = [&scale](
+    const double start_value, const double endpoint_value,
+    const double minimum, const double maximum)
+    {
+      if (endpoint_value < minimum) {
+        scale = std::min(scale, (minimum - start_value) / (endpoint_value - start_value));
+      } else if (endpoint_value > maximum) {
+        scale = std::min(scale, (maximum - start_value) / (endpoint_value - start_value));
+      }
+    };
+  clip_axis(start.x, endpoint.x, grid.origin_x, maximum_x);
+  clip_axis(start.y, endpoint.y, grid.origin_y, maximum_y);
+
+  if (!finite(scale) || scale < 0.0 || scale > 1.0) {
+    return std::nullopt;
+  }
+  const double clipped_x = start.x + scale * (endpoint.x - start.x);
+  const double clipped_y = start.y + scale * (endpoint.y - start.y);
+  const double column_value = (clipped_x - grid.origin_x) / grid.resolution_m;
+  const double row_value = (clipped_y - grid.origin_y) / grid.resolution_m;
+  if (!finite(column_value) || !finite(row_value)) {
+    return std::nullopt;
+  }
+  return GridCell{
+    static_cast<int>(std::floor(
+      std::clamp(
+        column_value, 0.0, static_cast<double>(grid.width - 1U)))),
+    static_cast<int>(std::floor(
+      std::clamp(
+        row_value, 0.0, static_cast<double>(grid.height - 1U)))),
+  };
+}
+
+void trace_ray(
+  GridData & grid, const GridCell start, const GridCell endpoint,
+  const bool endpoint_is_occupied)
 {
   int column = start.column;
   int row = start.row;
@@ -149,9 +195,11 @@ void trace_ray(GridData & grid, const GridCell start, const GridCell endpoint)
   }
 
   auto & endpoint_cell = grid.cells[cell_index(grid, endpoint.column, endpoint.row)];
-  if (endpoint_cell != kOccupied) {
+  if (endpoint_is_occupied && endpoint_cell != kOccupied) {
     endpoint_cell = kOccupied;
     ++grid.occupied_cell_count;
+  } else if (!endpoint_is_occupied && endpoint_cell != kOccupied) {
+    endpoint_cell = kFree;
   }
 }
 
@@ -250,12 +298,19 @@ GridData build_grid(
         continue;
       }
 
-      const auto endpoint_cell = world_to_cell(grid, endpoint.x, endpoint.y);
+      auto endpoint_cell = world_to_cell(grid, endpoint.x, endpoint.y);
+      const bool endpoint_is_occupied = endpoint_cell.has_value();
       if (!endpoint_cell.has_value()) {
-        continue;
+        endpoint_cell = clip_endpoint_to_grid(
+          grid,
+          Point3D{camera_pose_in_map.x, camera_pose_in_map.y, camera_pose_in_map.z}, endpoint);
+        if (!endpoint_cell.has_value()) {
+          continue;
+        }
       }
       ++grid.used_depth_count;
-      trace_ray(grid, camera_cell.value(), endpoint_cell.value());
+      trace_ray(
+        grid, camera_cell.value(), endpoint_cell.value(), endpoint_is_occupied);
     }
   }
 

@@ -264,7 +264,7 @@
   TF contains map -> base_link and base_link -> camera_optical_frame
   ```
 
-- [ ] **Step 2: Run the one-command demonstration**
+- [x] **Step 2: Run the one-command demonstration**
 
   Run:
 
@@ -274,7 +274,7 @@
 
   Expected: the vehicle takes off, moves through the safe mapping route, returns, lands, and the top-level launch exits zero while recording an M2 bag.
 
-- [ ] **Step 3: Analyze the bag and render evidence**
+- [x] **Step 3: Analyze the bag and render evidence**
 
   Run:
 
@@ -284,12 +284,13 @@
   PYTHONNOUSERSITE=1 python3 scripts/analyze_m2_mapping.py \
     "${accepted_bag}" \
     --metrics docs/assets/m2-mapping-metrics.json \
-    --plot docs/assets/m2-local-grid.png
+    --plot docs/assets/m2-local-grid.png \
+    --animation log/m2/m2-local-mapping.gif
   ```
 
   Expected: exit zero and metrics proving all three M2 acceptance criteria.
 
-- [ ] **Step 4: Run final static and project checks**
+- [x] **Step 4: Run final static and project checks**
 
   Run:
 
@@ -303,7 +304,7 @@
 
   Expected: all commands exit zero, with no project process left running.
 
-- [ ] **Step 5: Update documentation and milestone gates**
+- [x] **Step 5: Update documentation and milestone gates**
 
   Record exact bag path, launch log, topic counts, rate, latency distribution, TF convention, obstacle-alignment method, resource limits, and residual risks. Mark M2 checkboxes complete only after the validator passes.
 

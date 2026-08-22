@@ -4,9 +4,10 @@
 - Project scope and gates: `项目方案-ROS2无人机自主巡检系统.md`
 - Current environment evidence: `docs/m0-environment-audit.md`
 - Current flight evidence: `docs/m1-waypoint-audit.md`
+- Current mapping evidence: `docs/m2-local-mapping-audit.md`
 
 ## Current Milestone
-- M0 and M1 are accepted. Work only on M2 until every M2 acceptance item has direct evidence.
+- M0, M1, and M2 are accepted. Work only on M3 until every M3 acceptance item has direct evidence.
 - Update `README.md` and the current milestone audit when evidence changes.
 - Do not mark an acceptance item complete from configuration alone; run its stated command.
 
@@ -39,4 +40,4 @@
 - Check PX4 primary documentation before changing version combinations.
 - Add focused tests with every core behavior change.
 - Do not claim simulator, flight, or timing results without command output or recorded artifacts.
-- For M2, implement the smallest 2D local occupancy grid that satisfies the plan before considering OctoMap.
+- For M3, preserve the verified M2 map and TF contracts; reject stale maps by message age before planning or commanding motion.

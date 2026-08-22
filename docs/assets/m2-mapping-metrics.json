@@ -1,0 +1,125 @@
+{
+  "bag_path": "log/m2/mapping_20260822_091517",
+  "coordinate_frames": {
+    "camera_quaternion_xyzw": [
+      -0.5,
+      0.5,
+      -0.5,
+      0.5
+    ],
+    "camera_transform_is_static": true,
+    "camera_translation_m": [
+      0.13233,
+      0.0,
+      0.26078
+    ],
+    "map_is_fixed": true,
+    "observed_tf_links": [
+      "base_link -> camera_optical_frame",
+      "map -> base_link"
+    ],
+    "required_tf_links": [
+      "map -> base_link",
+      "base_link -> camera_optical_frame"
+    ]
+  },
+  "diagnostic_output_rate_hz": {
+    "maximum": 457.549,
+    "median": 10.001,
+    "minimum": 0.0
+  },
+  "flight_sequence": {
+    "airborne": true,
+    "armed_offboard": true,
+    "failsafe_observed": false,
+    "land_sample_count": 45,
+    "landed_and_disarmed": true,
+    "status_sample_count": 77
+  },
+  "hover_obstacle_alignment": {
+    "aligned_cell_count": 360,
+    "alignment_ratio": 1.0,
+    "average_speed_m_s": 0.1937745237285509,
+    "continuous_duration_s": 1.1,
+    "matched_obstacles": [
+      "right_wall"
+    ],
+    "minimum_altitude_m": 2.3,
+    "occupied_cell_count": 360,
+    "representative_alignment_ratio": 1.0,
+    "representative_timestamp_ns": 73100000000,
+    "snapshot_count": 12,
+    "vertical_range_m": 0.023584365844726562
+  },
+  "mapping_rate": {
+    "average_hz": 9.999999999999934,
+    "maximum_gap_s": 0.1,
+    "median_hz": 10.0,
+    "p95_interval_s": 0.1,
+    "required_hz": 5.0
+  },
+  "motion": {
+    "planar_displacement_m": 2.2365795880039014,
+    "pose_sample_count": 3538,
+    "required_m": 1.0
+  },
+  "motion_obstacle_alignment": {
+    "aligned_cell_count": 2234,
+    "alignment_ratio": 1.0,
+    "matched_obstacles": [
+      "right_wall"
+    ],
+    "occupied_cell_count": 2234,
+    "representative_alignment_ratio": 1.0,
+    "representative_timestamp_ns": 82100000000,
+    "snapshot_count": 69
+  },
+  "processing_latency_ms": {
+    "maximum": 2.03,
+    "median": 0.9875,
+    "p95": 1.5612999999999988,
+    "sample_count": 354
+  },
+  "provenance": {
+    "analysis_script_sha256": "24d16534d9b729d31b1c5bf1873dfbac9e72fa3bb456b59cd65351e480fb0f30",
+    "bag_files": [
+      "mapping_20260822_091517_0.db3",
+      "metadata.yaml"
+    ],
+    "bag_sha256": "5429ba3c23a7498298dccad7701fdd3224616d833b5c025eb8d122ef7a5c0239",
+    "runtime_source_sha256": {
+      "scripts/px4-headless-rcS": "3f7c306e31a338353c969ae23cfab660c3ab94f485bf6759425b0f80938f0773",
+      "scripts/run-px4-sitl.sh": "944ad666e3c81944012f72aac9ee45d5ce0077fd8295f3bf04ad0343b0856198",
+      "src/drone_bringup/config/local_mapping.yaml": "6b2cff7e125d6ba3bf3dd482ed20ebc4173ce959fc41825bebe69958fa1b2832",
+      "src/drone_bringup/config/mapping_mission.yaml": "16bc1648604a83c48a6c6256a09d3c6f7da890156e6b88e23c018f038f55dacd",
+      "src/drone_bringup/launch/local_mapping.launch.py": "57ac1b7a56daa2c4f64cc26e90752737abb83efd0888461877a82192e20fb0f2",
+      "src/drone_controller/include/drone_controller/waypoint_tracker.hpp": "982d0b6799eb733c79ab53c1af0140ae063f042fee67aa82df9ae9161e01dab5",
+      "src/drone_controller/src/waypoint_controller_node.cpp": "d26b11c8228a358b6c8cb0227cb692ae4dc730aac3bc08656eeec6479a055ebb",
+      "src/drone_controller/src/waypoint_tracker.cpp": "ffd6c0446c2b5fd1cd66ab1a387a471235aa5e76b4dcfc7487fd8da921b2623a",
+      "src/drone_perception/include/drone_perception/depth_grid_mapper.hpp": "738bb9b2fd280b24816ae0ecd2288506cc9a566eba355e36b45f6b95daf0730b",
+      "src/drone_perception/include/drone_perception/frame_conversions.hpp": "03843145154235881e0d486006ff57b6fa6be311fb84012ae6e4a4d5e2145a7e",
+      "src/drone_perception/src/depth_grid_mapper.cpp": "bee63d93351f74fb117563af3c7a5c3966f56353baf6084d68e3c54058fb8e1f",
+      "src/drone_perception/src/depth_grid_node.cpp": "5e25f01767928c3a893ea24cb33d1daa6081d834afdc2c8a0b000b172968d82a",
+      "src/drone_perception/src/frame_conversions.cpp": "9bcd9795062b4be0155e89025d11c3c56e6b766b0bc3366afa78b9ecaf563997",
+      "src/drone_perception/src/px4_tf_broadcaster_node.cpp": "3f17a2b1badca4b9888d102df454f458d9a8528333197ccb6fcd39dfbdd74043",
+      "src/drone_sim/models/x500_depth_project/model.sdf": "81a5a64d7ed0eea8ea7aa186dc9f86c8b5bf370375acf15e2d7a589a16697c61",
+      "src/drone_sim/worlds/inspection.sdf": "5f465310d0a175295b43759ecc03d591275d3fe2fac59e76e6016442540d9359"
+    },
+    "world_sha256": "5f465310d0a175295b43759ecc03d591275d3fe2fac59e76e6016442540d9359"
+  },
+  "rolling_grid": {
+    "max_center_error_m": 0.008646151411632556,
+    "max_tf_offset_ms": 7.997,
+    "median_center_error_m": 5.016555960914519e-05,
+    "occupied_cells_max": 726,
+    "occupied_cells_median": 40.0,
+    "occupied_cells_min": 23,
+    "sample_count": 354
+  },
+  "sensor_inputs": {
+    "camera_info_sample_count": 476,
+    "depth_sample_count": 476,
+    "validated_grid_depth_pairs": 354
+  },
+  "verdict": "accepted"
+}

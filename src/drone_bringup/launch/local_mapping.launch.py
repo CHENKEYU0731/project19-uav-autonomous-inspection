@@ -61,6 +61,7 @@ def validate_simulation_dependencies(
     agent_binary,
     px4_directory,
     px4_wrapper,
+    px4_startup_script,
     world_path,
     project_model_path,
 ):
@@ -71,6 +72,8 @@ def validate_simulation_dependencies(
         missing.append(str(px4_directory))
     if not px4_wrapper.is_file():
         missing.append(str(px4_wrapper))
+    if not px4_startup_script.is_file():
+        missing.append(str(px4_startup_script))
     if not world_path.is_file():
         missing.append(str(world_path))
     if not project_model_path.is_file():
@@ -92,6 +95,7 @@ def generate_launch_description():
     project_root = Path(os.environ.get("PROJECT_ROOT", "/opt/project19"))
     px4_directory = project_root / "external" / "PX4-Autopilot"
     px4_wrapper = project_root / "scripts" / "run-px4-sitl.sh"
+    px4_startup_script = project_root / "scripts" / "px4-headless-rcS"
     agent_binary = (
         project_root
         / ".local"
@@ -149,6 +153,7 @@ def generate_launch_description():
             agent_binary,
             px4_directory,
             px4_wrapper,
+            px4_startup_script,
             world_path,
             project_model_path,
         ],
@@ -167,15 +172,20 @@ def generate_launch_description():
         output="screen",
     )
     px4_sitl = ExecuteProcess(
-        cmd=["bash", str(px4_wrapper), str(px4_directory)],
+        cmd=[
+            "bash",
+            str(px4_wrapper),
+            str(px4_directory),
+            str(px4_startup_script),
+        ],
         output="screen",
         emulate_tty=False,
         additional_env={
             "HEADLESS": "1",
-            "PX4_PARAM_NAV_DLL_ACT": "0",
             "PX4_GZ_STANDALONE": "1",
             "PX4_GZ_WORLD": "inspection",
             "PX4_SIM_MODEL": "gz_x500_depth_project",
+            "PX4_SYS_AUTOSTART": "4001",
             "PX4_GZ_MODELS": str(project_models),
             "GZ_SIM_RESOURCE_PATH": gz_resource_path,
             "GZ_SIM_SYSTEM_PLUGIN_PATH": gz_plugin_path,
@@ -291,6 +301,12 @@ def generate_launch_description():
             OnProcessExit(
                 target_action=mapper,
                 on_exit=required_process_exit_actions("depth grid mapper"),
+            )
+        ),
+        RegisterEventHandler(
+            OnProcessExit(
+                target_action=rviz,
+                on_exit=required_process_exit_actions("RViz2"),
             )
         ),
         RegisterEventHandler(

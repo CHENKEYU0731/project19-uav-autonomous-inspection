@@ -73,7 +73,8 @@ double occupied_cell_center_x(const GridData & grid)
 TEST(DepthGridMapperTest, ProjectsOpticalAxisToBaseForward)
 {
   const auto grid = build_grid(
-    one_center_depth(2.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(), test_config());
+    one_center_depth(2.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(),
+    test_config());
 
   EXPECT_EQ(cell_at_world(grid, 2.0, 0.0), 100);
   EXPECT_EQ(grid.used_depth_count, 1U);
@@ -83,11 +84,24 @@ TEST(DepthGridMapperTest, ProjectsOpticalAxisToBaseForward)
 TEST(DepthGridMapperTest, MarksRayFreeAndEndpointOccupied)
 {
   const auto grid = build_grid(
-    one_center_depth(2.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(), test_config());
+    one_center_depth(2.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(),
+    test_config());
 
   EXPECT_EQ(cell_at_world(grid, 0.0, 0.0), 0);
   EXPECT_EQ(cell_at_world(grid, 1.0, 0.0), 0);
   EXPECT_EQ(cell_at_world(grid, 2.0, 0.0), 100);
+}
+
+TEST(DepthGridMapperTest, ClipsOutsideEndpointAndMarksVisibleRayFree)
+{
+  const auto grid = build_grid(
+    one_center_depth(6.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(),
+    test_config());
+
+  EXPECT_EQ(grid.used_depth_count, 1U);
+  EXPECT_EQ(grid.occupied_cell_count, 0U);
+  EXPECT_EQ(cell_at_world(grid, 0.0, 0.0), 0);
+  EXPECT_EQ(cell_at_world(grid, 3.0, 0.0), 0);
 }
 
 TEST(DepthGridMapperTest, RejectsInvalidConfigurationIntrinsicsAndDimensions)
@@ -153,7 +167,8 @@ TEST(DepthGridMapperTest, FiltersPointsOutsideRelativeHeightSlice)
 TEST(DepthGridMapperTest, MovesOriginWithoutMovingWorldObstacle)
 {
   const auto first = build_grid(
-    one_center_depth(3.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(), test_config());
+    one_center_depth(3.0F), 3, 3, test_intrinsics(), optical_pose(), identity_pose(),
+    test_config());
   const auto second = build_grid(
     one_center_depth(2.0F), 3, 3, test_intrinsics(), optical_pose(1.0), identity_pose(1.0),
     test_config());

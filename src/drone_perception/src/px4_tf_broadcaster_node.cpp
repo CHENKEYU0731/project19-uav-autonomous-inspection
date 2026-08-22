@@ -63,6 +63,17 @@ private:
 
   void handle_odometry(const px4_msgs::msg::VehicleOdometry::SharedPtr message)
   {
+    const auto arrival_time = now();
+    const std::uint64_t sample_timestamp =
+      message->timestamp_sample != 0U ? message->timestamp_sample : message->timestamp;
+    const auto aligned_timestamp = timestamp_aligner_.align(
+      sample_timestamp, arrival_time.nanoseconds());
+    if (!aligned_timestamp.has_value()) {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "Ignoring zero, out-of-order, stale, or future PX4 odometry timestamp");
+      return;
+    }
     const auto pose = ned_frd_to_enu_flu(message->position, message->q, message->pose_frame);
     if (!pose.has_value()) {
       RCLCPP_WARN_THROTTLE(
@@ -73,7 +84,8 @@ private:
     }
 
     geometry_msgs::msg::TransformStamped transform;
-    transform.header.stamp = now();
+    transform.header.stamp = rclcpp::Time(
+      aligned_timestamp.value(), get_clock()->get_clock_type());
     transform.header.frame_id = map_frame_;
     transform.child_frame_id = base_frame_;
     transform.transform.translation.x = pose->x;
@@ -92,6 +104,7 @@ private:
   double camera_x_m_;
   double camera_y_m_;
   double camera_z_m_;
+  Px4TimestampAligner timestamp_aligner_;
   std::unique_ptr<tf2_ros::TransformBroadcaster> transform_broadcaster_;
   std::unique_ptr<tf2_ros::StaticTransformBroadcaster> static_transform_broadcaster_;
   rclcpp::Subscription<px4_msgs::msg::VehicleOdometry>::SharedPtr odometry_subscription_;

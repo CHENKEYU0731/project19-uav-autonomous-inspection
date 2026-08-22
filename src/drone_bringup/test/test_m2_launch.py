@@ -18,6 +18,8 @@ LAUNCH_PATH = (
     / "launch"
     / "local_mapping.launch.py"
 )
+PX4_WRAPPER_PATH = PROJECT_ROOT / "scripts" / "run-px4-sitl.sh"
+PX4_HEADLESS_RCS_PATH = PROJECT_ROOT / "scripts" / "px4-headless-rcS"
 
 
 def load_module(name, path):
@@ -44,10 +46,13 @@ def test_launch_owns_m2_processes_topics_and_local_evidence():
         "inspection.sdf",
         "MicroXRCEAgent",
         "run-px4-sitl.sh",
+        "px4-headless-rcS",
         "PX4_GZ_STANDALONE",
         "PX4_GZ_WORLD",
         "PX4_SIM_MODEL",
+        "PX4_SYS_AUTOSTART",
         "PX4_GZ_MODELS",
+        "4001",
         "gz_x500_depth_project",
         "/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock",
         "/camera/depth/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
@@ -76,9 +81,25 @@ def test_launch_owns_m2_processes_topics_and_local_evidence():
         "bridge",
         "tf_broadcaster",
         "mapper",
+        "rviz",
         "bag_recorder",
     ):
         assert f"target_action={action_name}" in source
+
+
+def test_headless_px4_override_runs_after_airframe_configuration():
+    wrapper = PX4_WRAPPER_PATH.read_text(encoding="utf-8")
+    startup = PX4_HEADLESS_RCS_PATH.read_text(encoding="utf-8")
+
+    assert "px4-headless-rcS" in LAUNCH_PATH.read_text(encoding="utf-8")
+    assert 'px4_startup_script="${2:-}"' in wrapper
+    assert '"${px4_binary}" -d -s "${px4_startup_script}"' in wrapper
+
+    original_startup = ". etc/init.d-posix/rcS"
+    headless_override = "param set-default NAV_DLL_ACT 0"
+    assert original_startup in startup
+    assert headless_override in startup
+    assert startup.index(original_startup) < startup.index(headless_override)
 
 
 def test_m2_configs_define_valid_grid_safe_route_and_rviz_view():

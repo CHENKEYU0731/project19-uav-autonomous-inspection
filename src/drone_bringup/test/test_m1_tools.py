@@ -1,5 +1,6 @@
 from importlib.util import module_from_spec, spec_from_file_location
 import asyncio
+import json
 import math
 import os
 from pathlib import Path
@@ -20,6 +21,46 @@ from launch_ros.actions import Node
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+
+
+def wait_for_pid(path, timeout=10.0):
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            value = int(path.read_text(encoding="utf-8").strip())
+            if value > 0:
+                return value
+        except (FileNotFoundError, ValueError):
+            pass
+        time.sleep(0.05)
+    raise AssertionError(f"timed out waiting for a complete PID in {path}")
+
+
+def wait_for_file(path, timeout=2.0):
+    deadline = time.monotonic() + timeout
+    while not path.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert path.exists(), f"timed out waiting for {path}"
+
+
+def stop_wrapper(process):
+    if process.poll() is not None:
+        return
+    process.send_signal(signal.SIGTERM)
+    try:
+        process.wait(timeout=8.0)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5.0)
+
+
+def kill_process_group(process_group_id):
+    if process_group_id is None:
+        return
+    try:
+        os.killpg(process_group_id, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
 
 
 def load_module(name, path):
@@ -373,3 +414,210 @@ def test_px4_wrapper_starts_daemon_and_cleans_process_group(tmp_path):
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait(timeout=5.0)
+
+
+def test_px4_wrapper_cleans_build_process_group_when_interrupted(tmp_path):
+    px4_directory = tmp_path / "PX4-Autopilot"
+    px4_binary = (
+        px4_directory / "build" / "px4_sitl_default" / "bin" / "px4"
+    )
+    capture_path = tmp_path / "make-pid.txt"
+    px4_binary.parent.mkdir(parents=True)
+    px4_binary.parents[1].joinpath("rootfs").mkdir()
+    px4_binary.write_text("#!/bin/true\n", encoding="utf-8")
+    px4_binary.chmod(0o755)
+    (px4_directory / "Makefile").write_text(
+        "px4_sitl:\n"
+        f"\t@printf '%s\\n' \"$$PPID\" > '{capture_path}'\n"
+        "\t@sleep 30\n",
+        encoding="utf-8",
+    )
+
+    process = subprocess.Popen(
+        [
+            "bash",
+            str(PROJECT_ROOT / "scripts" / "run-px4-sitl.sh"),
+            str(px4_directory),
+        ]
+    )
+    make_pid = None
+    try:
+        make_pid = wait_for_pid(capture_path)
+
+        process.send_signal(signal.SIGTERM)
+        assert process.wait(timeout=10.0) == 143
+        try:
+            os.killpg(make_pid, 0)
+            assert False, "make process group survived wrapper shutdown"
+        except ProcessLookupError:
+            pass
+    finally:
+        stop_wrapper(process)
+        kill_process_group(make_pid)
+
+
+def test_px4_wrapper_finishes_cleanup_after_escalated_signal(tmp_path):
+    px4_directory = tmp_path / "PX4-Autopilot"
+    px4_binary = (
+        px4_directory / "build" / "px4_sitl_default" / "bin" / "px4"
+    )
+    rootfs_directory = px4_binary.parents[1] / "rootfs"
+    capture_path = tmp_path / "px4-pid.txt"
+    int_path = tmp_path / "px4-int.txt"
+    term_path = tmp_path / "px4-term.txt"
+    px4_binary.parent.mkdir(parents=True)
+    rootfs_directory.mkdir()
+    (px4_directory / "Makefile").write_text(
+        "px4_sitl:\n\t@true\n", encoding="utf-8"
+    )
+    px4_binary.write_text(
+        "#!/usr/bin/env python3\n"
+        "import os\n"
+        "from pathlib import Path\n"
+        "import signal\n"
+        "capture = Path(os.environ['PX4_CAPTURE'])\n"
+        "int_path = Path(os.environ['PX4_INT_CAPTURE'])\n"
+        "term_path = Path(os.environ['PX4_TERM_CAPTURE'])\n"
+        "signal.signal(signal.SIGINT, lambda *_: int_path.write_text('INT'))\n"
+        "signal.signal(signal.SIGTERM, lambda *_: term_path.write_text('TERM'))\n"
+        "capture.write_text(str(os.getpid()), encoding='utf-8')\n"
+        "while True:\n"
+        "    signal.pause()\n",
+        encoding="utf-8",
+    )
+    px4_binary.chmod(0o755)
+
+    environment = os.environ.copy()
+    environment["PX4_CAPTURE"] = str(capture_path)
+    environment["PX4_INT_CAPTURE"] = str(int_path)
+    environment["PX4_TERM_CAPTURE"] = str(term_path)
+    process = subprocess.Popen(
+        [
+            "bash",
+            str(PROJECT_ROOT / "scripts" / "run-px4-sitl.sh"),
+            str(px4_directory),
+        ],
+        env=environment,
+    )
+    px4_pid = None
+    try:
+        px4_pid = wait_for_pid(capture_path)
+
+        process.send_signal(signal.SIGINT)
+        wait_for_file(int_path)
+        process.send_signal(signal.SIGTERM)
+        wait_for_file(term_path, timeout=0.5)
+
+        assert process.wait(timeout=8.0) == 130
+        deadline = time.monotonic() + 2.0
+        while time.monotonic() < deadline:
+            try:
+                os.killpg(px4_pid, 0)
+            except ProcessLookupError:
+                break
+            time.sleep(0.05)
+        else:
+            assert False, "PX4 process group survived escalated wrapper shutdown"
+    finally:
+        stop_wrapper(process)
+        kill_process_group(px4_pid)
+
+
+def test_px4_wrapper_passes_startup_script_with_spaces(tmp_path):
+    px4_directory = tmp_path / "PX4-Autopilot"
+    px4_binary = (
+        px4_directory / "build" / "px4_sitl_default" / "bin" / "px4"
+    )
+    rootfs_directory = px4_binary.parents[1] / "rootfs"
+    startup_script = tmp_path / "startup scripts" / "headless rcS"
+    capture_path = tmp_path / "startup-arguments.json"
+    px4_binary.parent.mkdir(parents=True)
+    rootfs_directory.mkdir()
+    startup_script.parent.mkdir()
+    startup_script.write_text("# test startup\n", encoding="utf-8")
+    (px4_directory / "Makefile").write_text(
+        "px4_sitl:\n\t@true\n", encoding="utf-8"
+    )
+    px4_binary.write_text(
+        "#!/usr/bin/env python3\n"
+        "import json\n"
+        "import os\n"
+        "from pathlib import Path\n"
+        "import sys\n"
+        "Path(os.environ['PX4_CAPTURE']).write_text(\n"
+        "    json.dumps(sys.argv[1:]), encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    px4_binary.chmod(0o755)
+
+    environment = os.environ.copy()
+    environment["PX4_CAPTURE"] = str(capture_path)
+    result = subprocess.run(
+        [
+            "bash",
+            str(PROJECT_ROOT / "scripts" / "run-px4-sitl.sh"),
+            str(px4_directory),
+            str(startup_script),
+        ],
+        env=environment,
+        timeout=10.0,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    assert json.loads(capture_path.read_text(encoding="utf-8")) == [
+        "-d",
+        "-s",
+        str(startup_script),
+    ]
+
+
+def test_px4_wrapper_rejects_missing_startup_script_and_invalid_arity(tmp_path):
+    px4_directory = tmp_path / "PX4-Autopilot"
+    px4_binary = (
+        px4_directory / "build" / "px4_sitl_default" / "bin" / "px4"
+    )
+    rootfs_directory = px4_binary.parents[1] / "rootfs"
+    marker_path = tmp_path / "px4-started.txt"
+    px4_binary.parent.mkdir(parents=True)
+    rootfs_directory.mkdir()
+    (px4_directory / "Makefile").write_text(
+        "px4_sitl:\n\t@true\n", encoding="utf-8"
+    )
+    px4_binary.write_text(
+        f"#!/usr/bin/env bash\nprintf started > '{marker_path}'\n",
+        encoding="utf-8",
+    )
+    px4_binary.chmod(0o755)
+
+    missing_result = subprocess.run(
+        [
+            "bash",
+            str(PROJECT_ROOT / "scripts" / "run-px4-sitl.sh"),
+            str(px4_directory),
+            str(tmp_path / "missing rcS"),
+        ],
+        timeout=10.0,
+        check=False,
+    )
+    no_argument_result = subprocess.run(
+        ["bash", str(PROJECT_ROOT / "scripts" / "run-px4-sitl.sh")],
+        timeout=5.0,
+        check=False,
+    )
+    too_many_arguments_result = subprocess.run(
+        [
+            "bash",
+            str(PROJECT_ROOT / "scripts" / "run-px4-sitl.sh"),
+            "one",
+            "two",
+            "three",
+        ],
+        timeout=5.0,
+        check=False,
+    )
+
+    assert missing_result.returncode == 1
+    assert not marker_path.exists()
+    assert no_argument_result.returncode == 2
+    assert too_many_arguments_result.returncode == 2
