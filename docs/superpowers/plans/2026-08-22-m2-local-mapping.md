@@ -308,6 +308,6 @@
 
   Record exact bag path, launch log, topic counts, rate, latency distribution, TF convention, obstacle-alignment method, resource limits, and residual risks. Mark M2 checkboxes complete only after the validator passes.
 
-- [ ] **Step 6: Adversarial review, commit, and tag**
+- [x] **Step 6: Adversarial review, commit, and tag**
 
   Check for false acceptance from stale bags, frame-name-only TF checks, empty occupied grids, average-rate masking stalls, unsupported image encodings, project files outside the repository, and residual processes. Commit the verified M2 work and create annotated tag `v0.3-m2` only when all checks pass.
