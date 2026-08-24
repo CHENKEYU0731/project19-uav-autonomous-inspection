@@ -1,5 +1,10 @@
 # M2 Local Mapping Implementation Plan
 
+> **Historical record:** This implementation plan is retained for design history only.
+> M2 is accepted; current status and evidence are authoritative in
+> [`docs/m2-local-mapping-audit.md`](../../m2-local-mapping-audit.md). Do not use
+> unchecked steps here as current work items.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build and directly verify a Gazebo depth-camera scene, a correct PX4-to-ROS TF chain, and a rolling 2D local occupancy grid that updates at least 5 Hz with latency diagnostics.

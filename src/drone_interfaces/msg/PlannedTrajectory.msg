@@ -1,0 +1,4 @@
+uint64 trajectory_id
+builtin_interfaces/Time created_at
+string frame_id
+trajectory_msgs/MultiDOFJointTrajectory trajectory

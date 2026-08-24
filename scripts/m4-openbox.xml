@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <applications>
+    <application name="gz-sim-gui" class="Gazebo GUI">
+      <decor>no</decor>
+      <position force="yes">
+        <x>0</x>
+        <y>0</y>
+      </position>
+      <size>
+        <width>1200</width>
+        <height>1080</height>
+      </size>
+    </application>
+    <application name="rviz2" class="rviz2">
+      <decor>no</decor>
+      <position force="yes">
+        <x>1200</x>
+        <y>0</y>
+      </position>
+      <size>
+        <width>1200</width>
+        <height>1080</height>
+      </size>
+    </application>
+  </applications>
+</openbox_config>

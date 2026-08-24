@@ -1,3 +1,17 @@
+// Copyright 2026 Project19 contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "drone_perception/depth_grid_mapper.hpp"
 
 #include <diagnostic_msgs/msg/diagnostic_array.hpp>
@@ -38,6 +52,13 @@ std::string fixed_precision(const double value)
 {
   std::ostringstream stream;
   stream << std::fixed << std::setprecision(3) << value;
+  return stream.str();
+}
+
+std::string precise_value(const double value)
+{
+  std::ostringstream stream;
+  stream << std::setprecision(std::numeric_limits<double>::max_digits10) << value;
   return stream.str();
 }
 
@@ -259,6 +280,27 @@ private:
     status.values.push_back(diagnostic_value("used_depth_count", std::to_string(used_depth_count)));
     status.values.push_back(
       diagnostic_value("occupied_cell_count", std::to_string(occupied_cell_count)));
+    status.values.push_back(diagnostic_value("map_frame", map_frame_));
+    status.values.push_back(diagnostic_value("base_frame", base_frame_));
+    status.values.push_back(diagnostic_value("tf_timeout_s", precise_value(tf_timeout_s_)));
+    status.values.push_back(
+      diagnostic_value("resolution_m", precise_value(mapper_config_.resolution_m)));
+    status.values.push_back(
+      diagnostic_value("width_m", precise_value(mapper_config_.width_m)));
+    status.values.push_back(
+      diagnostic_value("height_m", precise_value(mapper_config_.height_m)));
+    status.values.push_back(
+      diagnostic_value("min_depth_m", precise_value(mapper_config_.min_depth_m)));
+    status.values.push_back(
+      diagnostic_value("max_depth_m", precise_value(mapper_config_.max_depth_m)));
+    status.values.push_back(
+      diagnostic_value(
+        "min_relative_height_m", precise_value(mapper_config_.min_relative_height_m)));
+    status.values.push_back(
+      diagnostic_value(
+        "max_relative_height_m", precise_value(mapper_config_.max_relative_height_m)));
+    status.values.push_back(
+      diagnostic_value("pixel_stride", std::to_string(mapper_config_.pixel_stride)));
     diagnostics.status.push_back(std::move(status));
     diagnostics_publisher_->publish(diagnostics);
   }

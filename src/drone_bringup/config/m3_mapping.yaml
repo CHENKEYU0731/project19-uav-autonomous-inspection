@@ -1,0 +1,24 @@
+px4_tf_broadcaster:
+  ros__parameters:
+    use_sim_time: true
+    map_frame: map
+    base_frame: base_link
+    camera_frame: camera_optical_frame
+    camera_x_m: 0.13233
+    camera_y_m: 0.0
+    camera_z_m: 0.26078
+
+depth_grid_node:
+  ros__parameters:
+    use_sim_time: true
+    map_frame: map
+    base_frame: base_link
+    tf_timeout_s: 0.1
+    resolution_m: 0.1
+    width_m: 12.0
+    height_m: 12.0
+    min_depth_m: 0.2
+    max_depth_m: 10.0
+    min_relative_height_m: -0.5
+    max_relative_height_m: 0.5
+    pixel_stride: 1

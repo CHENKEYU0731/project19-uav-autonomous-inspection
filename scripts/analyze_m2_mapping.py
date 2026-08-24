@@ -1,5 +1,19 @@
 #!/usr/bin/env python3
 
+# Copyright 2026 Project19 contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 from array import array
 from bisect import bisect_left
@@ -153,6 +167,7 @@ class DiagnosticSample:
     output_rate_hz: float
     used_depth_count: int
     occupied_cell_count: int
+    mapper_parameters: dict | None = None
 
 
 @dataclass
@@ -342,6 +357,27 @@ def append_diagnostics(output, message, received_ns):
         }
         if not required <= values.keys():
             raise RuntimeError("mapping diagnostics omit required values")
+        mapper_parameter_names = {
+            "map_frame",
+            "base_frame",
+            "tf_timeout_s",
+            "resolution_m",
+            "width_m",
+            "height_m",
+            "min_depth_m",
+            "max_depth_m",
+            "min_relative_height_m",
+            "max_relative_height_m",
+            "pixel_stride",
+        }
+        present_mapper_parameters = mapper_parameter_names & values.keys()
+        if present_mapper_parameters and present_mapper_parameters != mapper_parameter_names:
+            raise RuntimeError("mapping diagnostics omit runtime mapper parameters")
+        mapper_parameters = (
+            {name: values[name] for name in mapper_parameter_names}
+            if present_mapper_parameters
+            else None
+        )
         try:
             output.append(
                 DiagnosticSample(
@@ -356,6 +392,7 @@ def append_diagnostics(output, message, received_ns):
                     occupied_cell_count=int(
                         values["occupied_cell_count"]
                     ),
+                    mapper_parameters=mapper_parameters,
                 )
             )
         except ValueError as error:

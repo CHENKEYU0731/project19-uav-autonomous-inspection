@@ -1,0 +1,21 @@
+mission_node:
+  ros__parameters:
+    use_sim_time: true
+    map_frame: map
+    goal_altitude_m: 2.5
+    takeoff_altitude_m: 2.5
+    takeoff_tolerance_m: 0.25
+    takeoff_stable_time_s: 0.5
+    unreachable_timeout_s: 5.0
+    planner_status_timeout_s: 0.5
+    landing_timeout_s: 45.0
+    home_x_m: 0.0
+    home_y_m: 0.0
+    inspection_waypoints_xy: [
+      0.0, 3.0,
+      0.0, 6.0,
+      1.0, 2.5,
+      1.0, 1.0,
+      0.0, 1.0
+    ]
+    simulate_low_battery_after_reached_waypoints: 2

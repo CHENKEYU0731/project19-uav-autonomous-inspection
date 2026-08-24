@@ -1,3 +1,17 @@
+# Copyright 2026 Project19 contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from datetime import datetime
 import os
 from pathlib import Path
@@ -133,7 +147,9 @@ def generate_launch_description():
         os.environ.get("GZ_SIM_SYSTEM_PLUGIN_PATH", ""),
     )
 
-    mapping_config = bringup_share / "config" / "local_mapping.yaml"
+    default_mapping_config = (
+        bringup_share / "config" / "local_mapping.yaml"
+    )
     mission_config = bringup_share / "config" / "mapping_mission.yaml"
     rviz_config = bringup_share / "config" / "local_mapping.rviz"
     bag_directory = (
@@ -146,6 +162,7 @@ def generate_launch_description():
     use_rviz = LaunchConfiguration("use_rviz")
     run_mission = LaunchConfiguration("run_mission")
     record_bag = LaunchConfiguration("record_bag")
+    mapping_config = LaunchConfiguration("mapping_config")
 
     simulation_preflight = OpaqueFunction(
         function=validate_simulation_dependencies,
@@ -201,6 +218,8 @@ def generate_launch_description():
             "/camera/depth/image_raw@sensor_msgs/msg/Image[gz.msgs.Image",
             "/camera/depth/camera_info"
             "@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+            "/world/inspection/contacts"
+            "@ros_gz_interfaces/msg/Contacts[gz.msgs.Contacts",
         ],
         parameters=[{"use_sim_time": True}],
     )
@@ -209,14 +228,14 @@ def generate_launch_description():
         executable="px4_tf_broadcaster",
         name="px4_tf_broadcaster",
         output="screen",
-        parameters=[str(mapping_config)],
+        parameters=[mapping_config],
     )
     mapper = Node(
         package="drone_perception",
         executable="depth_grid_node",
         name="depth_grid_node",
         output="screen",
-        parameters=[str(mapping_config)],
+        parameters=[mapping_config],
     )
     rviz = Node(
         package="rviz2",
@@ -333,6 +352,11 @@ def generate_launch_description():
                 "record_bag",
                 default_value="true",
                 description="Record M2 evidence under project-local log/m2",
+            ),
+            DeclareLaunchArgument(
+                "mapping_config",
+                default_value=str(default_mapping_config),
+                description="ROS parameter file for TF and local mapping",
             ),
             *process_handlers,
             simulation_preflight,

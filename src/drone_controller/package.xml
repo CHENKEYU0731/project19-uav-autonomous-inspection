@@ -10,7 +10,11 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
 
   <depend>px4_msgs</depend>
+  <depend>drone_interfaces</depend>
+  <depend>geometry_msgs</depend>
   <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>trajectory_msgs</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
 

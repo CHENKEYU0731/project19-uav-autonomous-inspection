@@ -1,0 +1,82 @@
+{
+  "performance_evidence_complete": true,
+  "m5_acceptance_impact": "optional evidence only; no M5 acceptance item is satisfied by this report",
+  "host": {
+    "cpu": "AMD Ryzen 7 5800H with Radeon Graphics",
+    "logical_cpus": 16,
+    "wsl_memory_gib": 7.459,
+    "kernel": "6.6.87.2-microsoft-standard-WSL2",
+    "docker_engine": "29.1.3",
+    "docker_compose": "2.40.3"
+  },
+  "current_m4_run": {
+    "bag_path": "log/m4/inspection_20260823_195113",
+    "bag_sha256": "837f3f4307ba4b32d60855c772bd4728a224bbfc2196e6031958ee6ad7b28e24",
+    "metrics_path": "log/m4/inspection_20260823_195113/m4_metrics.json",
+    "metrics_sha256": "8daf494bfa4ce65ee325e971c5eb9e659a5e5f29663b370e4d234105a408e8c8",
+    "compose_log": "log/m5/docker-compose-m4-performance-complete.log",
+    "compose_log_sha256": "527fbb0cae6f8657ab77daa6fe8c98af4dee3459287ec3fba8b84269eb114dbf",
+    "compose_exit_code": 0,
+    "image_id": "sha256:a916ffe193482c3bcd74c3d1879e73bc67ecdf346f114e6b59b8e2814f32506f",
+    "m4_analyzer_accepted": true,
+    "replan_latency_s": 0.099860502,
+    "minimum_actual_clearance_m": 0.3180427465646668,
+    "vehicle_collision_count": 0,
+    "failsafe_observed": false,
+    "landed_and_disarmed": true
+  },
+  "container_resources": {
+    "scope": "aggregate headless M4 container including Gazebo, PX4, DDS, ROS nodes, and rosbag",
+    "sampling_command": "docker stats --no-stream",
+    "sample_count": 35,
+    "sample_start": "2026-08-24T03:51:07+08:00",
+    "sample_end": "2026-08-24T03:52:17+08:00",
+    "sample_span_s": 70.0,
+    "mean_sample_interval_s": 2.058824,
+    "cpu_percent": {
+      "mean": 165.846,
+      "median": 168.32,
+      "p95": 247.62,
+      "maximum": 300.79,
+      "interpretation": "100 percent equals one logical CPU"
+    },
+    "memory_mib": {
+      "mean": 624.512,
+      "median": 728.6,
+      "p95": 729.6,
+      "maximum": 903.6
+    },
+    "pids": {
+      "mean": 252.114,
+      "median": 297,
+      "p95": 297,
+      "maximum": 297
+    },
+    "raw_csv": "log/m5/m4-container-stats-complete.csv",
+    "raw_csv_sha256": "a77ed941d89c6c92ece5a704cfecff80c9fbb5139d5e2745c543c1235c9b1fed"
+  },
+  "mapping_reference": {
+    "source": "docs/assets/m2-mapping-metrics.json",
+    "source_sha256": "20aecefc16b93473b10dd7ce6af55a54f3dc35348b6195062e79cf741f4df94f",
+    "sample_count": 354,
+    "average_rate_hz": 10.0,
+    "processing_latency_ms": {
+      "median": 0.9875,
+      "p95": 1.5613,
+      "maximum": 2.03
+    }
+  },
+  "planning_reference": {
+    "source": "log/m3/planner_20260822_155300/m3_metrics.json",
+    "bag_sha256": "326b6f6aa549c3192487d08cdb5d9fe328df2fa6bafce4e7b5adfbd3fb86e305",
+    "replan_latency_s": 0.051156215,
+    "minimum_actual_clearance_m": 0.3675711703244613
+  },
+  "limitations": [
+    "Container CPU and memory are aggregate values, not per-node profiles.",
+    "Docker stats samples are approximately two seconds apart and do not measure short spikes between samples.",
+    "No GPU utilization was measured in headless software-rendered mode.",
+    "Mapping and M3 planning references are accepted historical runs with their own source hashes, not measurements from the current M4 resource run.",
+    "This local performance evidence does not prove fresh-machine reproduction, GitHub Actions status, branch protection, or repository history quality."
+  ]
+}

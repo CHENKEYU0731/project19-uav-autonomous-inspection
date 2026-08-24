@@ -1,0 +1,56 @@
+{
+  "accepted": true,
+  "dynamic_avoidance": {
+    "initial_path_center_clearance_m": 0.019866970596488304,
+    "initial_trajectory_id": 2,
+    "minimum_actual_clearance_m": 0.28430353972928823,
+    "post_replan_motion_setpoint_count": 226,
+    "removed_timestamp_ns": 1787494181915815464,
+    "replan_latency_s": 0.215548131,
+    "replanned_path_center_clearance_m": 0.8639853510042883,
+    "replanned_trajectory_id": 3
+  },
+  "flight": {"armed_offboard_timestamp_ns": 1787494153732024521},
+  "landing": {
+    "disarmed_timestamp_ns": 1787494210205007800,
+    "first_land_command_timestamp_ns": 1787494202726788430,
+    "land_command_count": 7,
+    "landed_and_disarmed": true,
+    "landed_timestamp_ns": 1787494208168293996
+  },
+  "mission": {
+    "event_count": 11,
+    "home_reached_timestamp_ns": 1787494202726554881,
+    "landing_completed_timestamp_ns": 1787494210210411343,
+    "low_battery_timestamp_ns": 1787494190210607094,
+    "reached_waypoint_count": 2,
+    "unreachable_timestamp_ns": 1787494187309509912
+  },
+  "planner_goals": {
+    "distinct_goal_count": 4,
+    "goal_count": 4,
+    "home_goal_timestamp_ns": 1787494192527157646,
+    "return_waypoint_count": 1
+  },
+  "provenance": {
+    "bag_path": "/opt/project19/log/m4/inspection_video_20260823_220601",
+    "bag_sha256": "82aa14e09208c4a205469a2b29c47c81999492d097012eba772a8c87242b67e7",
+    "runtime_source_sha256": {
+      "scripts/analyze_m3_planning.py": "ec470081192fa6c19338fbd8a1ecac00469b40c3cc61673e26a6e68cc640c6af",
+      "scripts/analyze_m4_mission.py": "4020d807b04208c4c25a51362f8ca95d5efbc0b47bed4c80bbb7be87a22cb51b",
+      "scripts/m3_dynamic_blocker.py": "cfb0dcfeb3e25eaf157a947eb954dbbaa2cb4fa04bbf2aa39402ca29a76f64c5",
+      "src/drone_bringup/config/m3_mapping.yaml": "60931757d4ec56b0bfe7907886373c490841de299155a921071a927b9d19d399",
+      "src/drone_bringup/config/m3_planner.yaml": "4091f9cc365281f194d951e55826caf8dcb8fe1ec64c6e270f9f9033a131dd79",
+      "src/drone_bringup/config/m4_controller.yaml": "d38d0e62396420ee61fd038478b7ac1d4290e66155a22e8fb11819bf492a745b",
+      "src/drone_bringup/config/m4_mission.yaml": "b8c4b41cd45c7a82ad6b7f536844e001c30112412d049435f9f04a3b40c2a323",
+      "src/drone_bringup/launch/m4_inspection.launch.py": "1ea2bc538ab47e900a300c7289c5dfb5cd6bcea39dc0cc81030767b6543cfc53",
+      "src/drone_controller/src/waypoint_controller_node.cpp": "c53c67bb2a3debfe00cb07451333e7db247e76c96c042cc7143dfd20bd860013",
+      "src/drone_mission/src/mission_fsm.cpp": "e8d5c9860173d51a9a5f70514993495ee6acb4f633ceb046b15f3e35a08e2a92",
+      "src/drone_mission/src/mission_node.cpp": "17eb6ac6705ae7aad37f4b2146d897eb06d775f372c9ce96a976ab77beffb10c",
+      "src/drone_perception/src/depth_grid_node.cpp": "ea780d4eb6f7c5178d5942e9ff265e4542c2dc90b3b5663400d70b81568636c0",
+      "src/drone_planner/src/planner_node.cpp": "af2eede8199794a65abeeb9886137c6b55db8a2d8e20713f46a9ecd130e8ab54",
+      "src/drone_sim/worlds/inspection.sdf": "0a6c3090ab9f51b1c5e26d6b8aa0aa804ebb0b86d134f4e5a0be7dd65d5dbbda"
+    }
+  },
+  "safety": {"failsafe_observed": false, "vehicle_collision_count": 0}
+}

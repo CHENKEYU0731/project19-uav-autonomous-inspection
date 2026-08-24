@@ -1,3 +1,17 @@
+# Copyright 2026 Project19 contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from importlib.util import module_from_spec, spec_from_file_location
 import asyncio
 import json
@@ -361,7 +375,7 @@ def test_px4_wrapper_starts_daemon_and_cleans_process_group(tmp_path):
         "import signal\n"
         "import sys\n"
         "capture = Path(os.environ['PX4_CAPTURE'])\n"
-        "capture.write_text('\\n'.join([sys.argv[1], "
+        "capture.write_text('\\n'.join([sys.argv[1], sys.argv[2], "
         "os.environ['PX4_SIM_MODEL'], os.environ['GZ_IP'], os.getcwd(), "
         "str(os.getpid())]) + '\\n', encoding='utf-8')\n"
         "def stop(_signum, _frame):\n"
@@ -391,13 +405,14 @@ def test_px4_wrapper_starts_daemon_and_cleans_process_group(tmp_path):
         assert capture_path.exists(), "PX4 wrapper did not start the binary"
 
         invocation = capture_path.read_text(encoding="utf-8").splitlines()
-        assert invocation[:4] == [
+        assert invocation[:5] == [
             "-d",
+            str(px4_directory / "ROMFS" / "px4fmu_common"),
             "gz_x500",
             "127.0.0.1",
             str(rootfs_directory),
         ]
-        px4_pid = int(invocation[4])
+        px4_pid = int(invocation[5])
 
         process.send_signal(signal.SIGTERM)
         assert process.wait(timeout=5.0) == 143
@@ -569,6 +584,7 @@ def test_px4_wrapper_passes_startup_script_with_spaces(tmp_path):
         "-d",
         "-s",
         str(startup_script),
+        str(px4_directory / "ROMFS" / "px4fmu_common"),
     ]
 
 

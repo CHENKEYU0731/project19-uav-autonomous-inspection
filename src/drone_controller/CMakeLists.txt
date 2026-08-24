@@ -10,8 +10,12 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 find_package(ament_cmake REQUIRED)
+find_package(drone_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(trajectory_msgs REQUIRED)
 
 add_library(waypoint_tracker src/waypoint_tracker.cpp)
 target_include_directories(waypoint_tracker PUBLIC
@@ -19,7 +23,8 @@ target_include_directories(waypoint_tracker PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 add_executable(waypoint_controller src/waypoint_controller_node.cpp)
-ament_target_dependencies(waypoint_controller px4_msgs rclcpp)
+ament_target_dependencies(
+  waypoint_controller drone_interfaces geometry_msgs px4_msgs rclcpp std_msgs trajectory_msgs)
 target_link_libraries(waypoint_controller waypoint_tracker)
 
 install(

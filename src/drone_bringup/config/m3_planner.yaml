@@ -1,0 +1,16 @@
+planner_node:
+  ros__parameters:
+    use_sim_time: true
+    map_frame: map
+    base_frame: base_link
+    goal_x_m: 0.0
+    goal_y_m: 3.0
+    goal_z_m: 2.5
+    footprint_radius_m: 0.35
+    inflation_radius_m: 0.50
+    minimum_altitude_m: 2.0
+    maximum_map_age_s: 0.5
+    tf_timeout_s: 0.1
+    maximum_velocity_m_s: 1.0
+    maximum_acceleration_m_s2: 1.0
+    sample_period_s: 0.1

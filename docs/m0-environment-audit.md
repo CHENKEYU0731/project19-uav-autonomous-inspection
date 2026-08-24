@@ -11,7 +11,7 @@ M0 四项验收标准均已在当前机器上获得直接运行证据。当前�
 | 项目 | 当前状态 | 证据 |
 |---|---|---|
 | Git 仓库 | 已初始化 | 分支 `codex/m0-bootstrap` |
-| WSL2 | 已安装 | `Ubuntu-22.04`，WSL 版本 2；发行版数据位于项目 `.wsl/Ubuntu-22.04` |
+| WSL2 | 已安装 | `Ubuntu-22.04`，WSL 版本 2；发行版数据已迁移到 `D:\codex-wsl\project19-Ubuntu-22.04` |
 | Ubuntu | 已验证 | `/etc/os-release`：`Ubuntu 22.04.5 LTS` |
 | ROS 2 | 已安装 | `/opt/ros/humble/bin/ros2`；`ros-humble-desktop 0.10.0-1jammy.20260804.223343` |
 | Gazebo | 已安装 | `gz sim --versions`：`8.15.0`；`ros-humble-ros-gzharmonic 0.244.12-3jammy` |
@@ -177,7 +177,7 @@ velocity: [-0.02463, 0.01026, -0.00289]
 
 ## 存储边界
 
-- WSL 发行版：`.wsl/Ubuntu-22.04`
+- WSL 发行版：`D:\codex-wsl\project19-Ubuntu-22.04`
 - PX4 与 Agent 源码：`external/`
 - ROS 2 外部源码：`src/px4_msgs`、`src/px4_ros_com`
 - Colcon 输出：`build/`、`install/`、`log/`
@@ -185,7 +185,8 @@ velocity: [-0.02463, 0.01026, -0.00289]
 - 下载：`downloads/`
 - PX4 ULog：被忽略的 `external/PX4-Autopilot/build/.../rootfs/log/`
 
-上述生成物均在当前项目目录内，并由 `.gitignore` 排除。未发现本项目主动写入 C 盘的生成物。
+除用户明确指定迁移到 D 盘的 WSL VHD 外，上述生成物均在当前项目目录内，并由
+`.gitignore` 排除。未发现本项目主动写入 C 盘的生成物。
 
 ## M0 验收矩阵
 

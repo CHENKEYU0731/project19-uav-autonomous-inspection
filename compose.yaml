@@ -1,0 +1,52 @@
+name: project19-inspection
+
+services:
+  inspection:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GITHUB_MIRROR_PREFIX: "${GITHUB_MIRROR_PREFIX:-}"
+    image: project19-inspection:local
+    init: true
+    ipc: host
+    network_mode: host
+    environment:
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-19}"
+    volumes:
+      - ./log:/opt/project19/log
+    command:
+      - ros2
+      - launch
+      - drone_bringup
+      - m4_inspection.launch.py
+      - use_rviz:=false
+      - use_gazebo_gui:=false
+    stop_grace_period: 30s
+
+  inspection-gui:
+    profiles: [gui]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GITHUB_MIRROR_PREFIX: "${GITHUB_MIRROR_PREFIX:-}"
+    image: project19-inspection:local
+    init: true
+    ipc: host
+    network_mode: host
+    environment:
+      DISPLAY: "${DISPLAY:-:0}"
+      QT_X11_NO_MITSHM: "1"
+      ROS_DOMAIN_ID: "${ROS_DOMAIN_ID:-19}"
+    volumes:
+      - ./log:/opt/project19/log
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    command:
+      - ros2
+      - launch
+      - drone_bringup
+      - m4_inspection.launch.py
+      - use_rviz:=true
+      - use_gazebo_gui:=true
+    stop_grace_period: 30s

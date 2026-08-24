@@ -1,6 +1,21 @@
+# Copyright 2026 Project19 contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from importlib.util import module_from_spec, spec_from_file_location
 import math
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from PIL import Image
@@ -15,6 +30,56 @@ def load_module(name, path):
     module = module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def diagnostic_message(mapper_parameters=None):
+    values = {
+        "processing_latency_ms": "1.5",
+        "output_rate_hz": "10.0",
+        "used_depth_count": "100",
+        "occupied_cell_count": "1",
+    }
+    if mapper_parameters:
+        values.update(mapper_parameters)
+    return SimpleNamespace(
+        header=SimpleNamespace(stamp=SimpleNamespace(sec=1, nanosec=2)),
+        status=[
+            SimpleNamespace(
+                name="drone_perception/local_grid",
+                values=[
+                    SimpleNamespace(key=key, value=value)
+                    for key, value in values.items()
+                ],
+            )
+        ],
+    )
+
+
+def test_diagnostic_parser_preserves_legacy_and_runtime_parameter_evidence():
+    module = load_module("analyze_m2_mapping", ANALYZER_PATH)
+    output = []
+    module.append_diagnostics(output, diagnostic_message(), 0)
+    assert output[0].mapper_parameters is None
+
+    parameters = {
+        "map_frame": "map",
+        "base_frame": "base_link",
+        "tf_timeout_s": "0.1",
+        "resolution_m": "0.1",
+        "width_m": "12",
+        "height_m": "12",
+        "min_depth_m": "0.2",
+        "max_depth_m": "10",
+        "min_relative_height_m": "-0.5",
+        "max_relative_height_m": "0.5",
+        "pixel_stride": "1",
+    }
+    module.append_diagnostics(output, diagnostic_message(parameters), 0)
+    assert output[1].mapper_parameters == parameters
+
+    parameters.pop("pixel_stride")
+    with pytest.raises(RuntimeError, match="runtime mapper parameters"):
+        module.append_diagnostics([], diagnostic_message(parameters), 0)
 
 
 def make_grid(module, timestamp_ns, base_x, base_y, obstacle=(5.0, 0.0)):

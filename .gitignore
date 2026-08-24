@@ -2,14 +2,30 @@
 build/
 install/
 log/
+build-*/
+install-*/
 
 # Local caches and downloads
 .cache/
+.tmp/
 .local/
+.mypy_cache/
+.nox/
+.tox/
+.venv/
+venv/
+htmlcov/
+.coverage
 downloads/
 .simulation-gazebo/
 __pycache__/
 *.pyc
+*.pyo
+*.tmp
+*.swp
+*.swo
+*.bak
+*~
 
 # Local WSL distribution and external source trees
 .wsl/
@@ -23,3 +39,14 @@ src/px4_ros_com/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Runtime evidence and local demonstration artifacts
+*.db3
+*.mcap
+*.ulg
+*.log
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm

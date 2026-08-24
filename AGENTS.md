@@ -5,22 +5,25 @@
 - Current environment evidence: `docs/m0-environment-audit.md`
 - Current flight evidence: `docs/m1-waypoint-audit.md`
 - Current mapping evidence: `docs/m2-local-mapping-audit.md`
+- Current planning evidence: `docs/m3-path-planning-audit.md`
+- Current mission evidence: `docs/m4-mission-audit.md`
+- Current engineering evidence: `docs/m5-engineering-audit.md`
 
 ## Current Milestone
-- M0, M1, and M2 are accepted. Work only on M3 until every M3 acceptance item has direct evidence.
+- M0 through M4 are accepted. Work only on M5 until every M5 acceptance item has direct evidence.
 - Update `README.md` and the current milestone audit when evidence changes.
 - Do not mark an acceptance item complete from configuration alone; run its stated command.
 
 ## Environment
 - Host: Windows with WSL2.
-- Target distro: Ubuntu 22.04, stored under `.wsl/Ubuntu-22.04`.
+- Target distro: Ubuntu 22.04, stored at `D:\codex-wsl\project19-Ubuntu-22.04`.
 - Stack: ROS 2 Humble, PX4 v1.14 or newer, Gazebo Harmonic, C++17.
 - Run Linux build and test commands from the repository root inside WSL.
 
 ## Storage
 - Keep source, downloads, caches, build outputs, logs, and temporary files in this repository or its subdirectories.
 - Do not write project-generated files to C: unless the operating system or a required tool enforces it.
-- Keep the local WSL image in `.wsl/`, PX4 in `external/PX4-Autopilot/`, and downloaded archives in `downloads/`.
+- Keep the local WSL image at `D:\codex-wsl\project19-Ubuntu-22.04`, PX4 in `external/PX4-Autopilot/`, and downloaded archives in `downloads/`.
 - Never commit `.wsl/`, external source trees, build outputs, logs, datasets, or videos.
 
 ## Target Commands
@@ -33,6 +36,7 @@
 | Check PX4 odometry | `ros2 topic echo --once /fmu/out/vehicle_odometry` |
 | Run M1 mission | `ros2 launch drone_bringup waypoint_mission.launch.py` |
 | Test project packages | `colcon test --packages-select drone_controller drone_bringup` |
+| Run current M5 gate | `bash scripts/ci.sh` |
 
 ## Change Rules
 - Prefer the smallest change that advances the current acceptance gate.
@@ -40,4 +44,4 @@
 - Check PX4 primary documentation before changing version combinations.
 - Add focused tests with every core behavior change.
 - Do not claim simulator, flight, or timing results without command output or recorded artifacts.
-- For M3, preserve the verified M2 map and TF contracts; reject stale maps by message age before planning or commanding motion.
+- Preserve the verified M2 map/TF, M3 planner/controller, and M4 mission/evidence contracts while implementing M5.

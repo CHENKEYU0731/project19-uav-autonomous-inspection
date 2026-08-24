@@ -1,5 +1,23 @@
+// Copyright 2026 Project19 contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "drone_controller/waypoint_tracker.hpp"
 
+#include <drone_interfaces/msg/mission_command.hpp>
+#include <drone_interfaces/msg/planned_trajectory.hpp>
+#include <drone_interfaces/msg/planner_status.hpp>
+#include <geometry_msgs/msg/vector3.hpp>
 #include <px4_msgs/msg/offboard_control_mode.hpp>
 #include <px4_msgs/msg/trajectory_setpoint.hpp>
 #include <px4_msgs/msg/vehicle_command.hpp>
@@ -8,14 +26,18 @@
 #include <px4_msgs/msg/vehicle_local_position.hpp>
 #include <px4_msgs/msg/vehicle_status.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/bool.hpp>
+#include <trajectory_msgs/msg/multi_dof_joint_trajectory_point.hpp>
 
 #include <algorithm>
+#include <cinttypes>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -41,6 +63,12 @@ public:
     landing_timeout_s_(declare_parameter<double>("landing_timeout_s", 30.0)),
     position_timeout_s_(declare_parameter<double>("position_timeout_s", 0.5)),
     status_timeout_s_(declare_parameter<double>("status_timeout_s", 2.0)),
+    map_frame_(declare_parameter<std::string>("map_frame", "map")),
+    use_planned_trajectory_(declare_parameter<bool>("use_planned_trajectory", false)),
+    mission_managed_landing_(declare_parameter<bool>("mission_managed_landing", false)),
+    planned_trajectory_topic_(declare_parameter<std::string>(
+        "planned_trajectory_topic", "/drone_planner/trajectory")),
+    planner_stale_timeout_s_(declare_parameter<double>("planner_stale_timeout_s", 0.5)),
     waypoint_offsets_xy_(declare_parameter<std::vector<double>>(
         "waypoint_offsets_xy", {2.0, 0.0, 2.0, 2.0, -2.0, 2.0, -2.0, 0.0})),
     waypoint_tracker_(
@@ -96,6 +124,40 @@ public:
         handle_command_ack(*message);
       });
 
+    planned_trajectory_subscription_ =
+      create_subscription<drone_interfaces::msg::PlannedTrajectory>(
+      planned_trajectory_topic_, rclcpp::QoS(1).reliable().transient_local(),
+      [this](const drone_interfaces::msg::PlannedTrajectory::UniquePtr message) {
+        handle_planned_trajectory(*message);
+      });
+    planner_status_subscription_ = create_subscription<drone_interfaces::msg::PlannerStatus>(
+      "/drone_planner/status", rclcpp::QoS(10).reliable(),
+      [this](const drone_interfaces::msg::PlannerStatus::UniquePtr message) {
+        handle_planner_status(*message);
+      });
+    mission_command_subscription_ =
+      create_subscription<drone_interfaces::msg::MissionCommand>(
+      "/drone_mission/command", rclcpp::QoS(10).reliable(),
+      [this](const drone_interfaces::msg::MissionCommand::UniquePtr message) {
+        handle_mission_command(*message);
+      });
+    insertion_hold_subscription_ = create_subscription<std_msgs::msg::Bool>(
+      "/drone_m3/insertion_hold", rclcpp::QoS(1).reliable().transient_local(),
+      [this](const std_msgs::msg::Bool::UniquePtr message) {
+        if (!use_planned_trajectory_ || insertion_hold_active_ == message->data) {
+          return;
+        }
+        insertion_hold_active_ = message->data;
+        if (insertion_hold_active_) {
+          insertion_hold_started_at_ = WaypointTracker::Clock::now();
+          insertion_hold_target_ = current_position_;
+          RCLCPP_INFO(get_logger(), "Holding position for dynamic blocker insertion");
+        } else {
+          insertion_hold_target_.reset();
+          RCLCPP_INFO(get_logger(), "Dynamic blocker insertion hold released");
+        }
+      });
+
     timer_ = create_wall_timer(100ms, std::bind(&WaypointController::control_tick, this));
     RCLCPP_INFO(
       get_logger(), "Waiting for valid PX4 local position, vehicle status, and land status");
@@ -113,11 +175,190 @@ private:
     priming_offboard,
     requesting_offboard,
     taking_off,
+    waiting_for_planner,
     inspecting,
     returning_home,
     landing,
     complete,
   };
+
+  struct PlannedTrajectorySnapshot
+  {
+    drone_interfaces::msg::PlannedTrajectory message;
+    WaypointTracker::Clock::time_point received_at{WaypointTracker::Clock::now()};
+    WaypointTracker::Clock::time_point execution_started_at{received_at};
+    std::size_t point_index{0U};
+  };
+
+  void handle_planned_trajectory(
+    const drone_interfaces::msg::PlannedTrajectory & message)
+  {
+    if (!use_planned_trajectory_) {
+      return;
+    }
+    const rclcpp::Time created_at(message.created_at, get_clock()->get_clock_type());
+    const rclcpp::Time trajectory_stamp(
+      message.trajectory.header.stamp, get_clock()->get_clock_type());
+    const rclcpp::Time now = get_clock()->now();
+    if (message.trajectory_id == 0U || message.frame_id != map_frame_ ||
+      message.trajectory.header.frame_id != map_frame_ ||
+      created_at.nanoseconds() <= 0 || trajectory_stamp.nanoseconds() <= 0 ||
+      created_at != trajectory_stamp || now < created_at ||
+      (now - created_at).seconds() > planner_stale_timeout_s_ ||
+      message.trajectory.points.empty())
+    {
+      RCLCPP_WARN_THROTTLE(
+        get_logger(), *get_clock(), 2000,
+        "Rejecting planner trajectory with invalid frame, timestamp, or freshness");
+      return;
+    }
+
+    double previous_time_s = -1.0;
+    for (const auto & point : message.trajectory.points) {
+      const double time_s = static_cast<double>(point.time_from_start.sec) +
+        static_cast<double>(point.time_from_start.nanosec) / 1e9;
+      if (point.time_from_start.sec < 0 || point.time_from_start.nanosec >= 1000000000U ||
+        !std::isfinite(time_s) || time_s < previous_time_s ||
+        point.transforms.size() != 1U || point.velocities.size() != 1U ||
+        point.accelerations.size() != 1U ||
+        !valid_trajectory_vector(point.transforms.front().translation) ||
+        !valid_trajectory_vector(point.velocities.front().linear) ||
+        !valid_trajectory_vector(point.accelerations.front().linear))
+      {
+        RCLCPP_WARN_THROTTLE(
+          get_logger(), *get_clock(), 2000,
+          "Rejecting planner trajectory with invalid point data");
+        return;
+      }
+      previous_time_s = time_s;
+    }
+
+    const auto now_steady = WaypointTracker::Clock::now();
+    const bool new_trajectory =
+      !latest_planned_trajectory_.has_value() ||
+      latest_planned_trajectory_->message.trajectory_id != message.trajectory_id;
+    if (new_trajectory) {
+      planned_endpoint_reached_ = false;
+    }
+    PlannedTrajectorySnapshot snapshot;
+    snapshot.message = message;
+    snapshot.received_at = now_steady;
+    snapshot.execution_started_at = new_trajectory ? now_steady :
+      latest_planned_trajectory_->execution_started_at;
+    snapshot.point_index = new_trajectory ? 0U : std::min(
+      latest_planned_trajectory_->point_index, message.trajectory.points.size() - 1U);
+    latest_planned_trajectory_ = std::move(snapshot);
+
+    if (planner_status_received_) {
+      planner_status_safe_ =
+        (planner_state_ == drone_interfaces::msg::PlannerStatus::READY ||
+        planner_state_ == drone_interfaces::msg::PlannerStatus::GOAL_REACHED) &&
+        planner_map_fresh_ && planner_trajectory_valid_ &&
+        planner_status_trajectory_id_ == message.trajectory_id;
+    }
+  }
+
+  static bool valid_trajectory_vector(const geometry_msgs::msg::Vector3 & vector)
+  {
+    return std::isfinite(vector.x) && std::isfinite(vector.y) && std::isfinite(vector.z);
+  }
+
+  void handle_planner_status(const drone_interfaces::msg::PlannerStatus & message)
+  {
+    if (!use_planned_trajectory_) {
+      return;
+    }
+    planner_status_received_ = true;
+    planner_status_received_at_ = WaypointTracker::Clock::now();
+    planner_state_ = message.state;
+    planner_map_fresh_ = message.map_fresh;
+    planner_trajectory_valid_ = message.trajectory_valid;
+    planner_status_trajectory_id_ = message.trajectory_id;
+    planner_status_safe_ =
+      (message.state == drone_interfaces::msg::PlannerStatus::READY ||
+      message.state == drone_interfaces::msg::PlannerStatus::GOAL_REACHED) &&
+      message.map_fresh && message.trajectory_valid && latest_planned_trajectory_.has_value() &&
+      message.trajectory_id == latest_planned_trajectory_->message.trajectory_id;
+  }
+
+  void handle_mission_command(const drone_interfaces::msg::MissionCommand & message)
+  {
+    if (!mission_managed_landing_ ||
+      state_ == State::landing || state_ == State::complete)
+    {
+      return;
+    }
+    if (message.command == drone_interfaces::msg::MissionCommand::SET_YAW) {
+      constexpr float pi = 3.14159265358979323846F;
+      if (!std::isfinite(message.yaw_rad) || message.yaw_rad < -pi || message.yaw_rad > pi) {
+        RCLCPP_WARN(get_logger(), "Rejecting invalid mission yaw command");
+        return;
+      }
+      commanded_yaw_rad_ = message.yaw_rad;
+      RCLCPP_INFO(
+        get_logger(), "Accepted mission yaw command %.2f rad: %s",
+        commanded_yaw_rad_, message.reason.c_str());
+      return;
+    }
+    if (message.command != drone_interfaces::msg::MissionCommand::LAND) {
+      RCLCPP_WARN(
+        get_logger(), "Ignoring unknown mission command %u",
+        static_cast<unsigned int>(message.command));
+      return;
+    }
+    const rclcpp::Time stamp(message.stamp, get_clock()->get_clock_type());
+    const rclcpp::Time now = get_clock()->now();
+    if (stamp.nanoseconds() <= 0 || now < stamp ||
+      (now - stamp).seconds() > command_timeout_s_)
+    {
+      RCLCPP_WARN(get_logger(), "Rejecting stale or invalid mission LAND command");
+      return;
+    }
+    if (arming_state_ != px4_msgs::msg::VehicleStatus::ARMING_STATE_ARMED) {
+      RCLCPP_WARN(get_logger(), "Ignoring mission LAND command because vehicle is not armed");
+      return;
+    }
+    RCLCPP_INFO(
+      get_logger(), "Accepted mission LAND command: %s", message.reason.c_str());
+    request_landing();
+  }
+
+  bool planner_execution_is_safe(const WaypointTracker::Clock::time_point now)
+  {
+    if (!use_planned_trajectory_ || !latest_planned_trajectory_.has_value() ||
+      !planner_status_received_ || !planner_status_safe_)
+    {
+      return false;
+    }
+    const auto maximum_age = std::chrono::duration_cast<WaypointTracker::Clock::duration>(
+      std::chrono::duration<double>(planner_stale_timeout_s_));
+    if (!sample_is_fresh(planner_status_received_at_, now, maximum_age) ||
+      !sample_is_fresh(latest_planned_trajectory_->received_at, now, maximum_age))
+    {
+      return false;
+    }
+    const rclcpp::Time created_at(
+      latest_planned_trajectory_->message.created_at, get_clock()->get_clock_type());
+    const rclcpp::Time ros_now = get_clock()->now();
+    return created_at.nanoseconds() > 0 && ros_now >= created_at &&
+           (ros_now - created_at).seconds() <= planner_stale_timeout_s_;
+  }
+
+  void begin_planned_execution(const WaypointTracker::Clock::time_point now)
+  {
+    if (!latest_planned_trajectory_.has_value()) {
+      return;
+    }
+    latest_planned_trajectory_->execution_started_at = now;
+    latest_planned_trajectory_->point_index = 0U;
+    waypoint_tracker_.reset();
+    target_started_at_ = now;
+    planner_hold_active_ = false;
+    state_ = State::inspecting;
+    RCLCPP_INFO(
+      get_logger(), "Planner trajectory %" PRIu64 " accepted; beginning map-frame execution",
+      static_cast<std::uint64_t>(latest_planned_trajectory_->message.trajectory_id));
+  }
 
   void validate_parameters() const
   {
@@ -136,6 +377,20 @@ private:
     validate_positive_duration(landing_timeout_s_, "landing_timeout_s");
     validate_positive_duration(position_timeout_s_, "position_timeout_s");
     validate_positive_duration(status_timeout_s_, "status_timeout_s");
+    if (map_frame_.empty()) {
+      throw std::invalid_argument("map_frame must not be empty");
+    }
+    if (planned_trajectory_topic_.empty()) {
+      throw std::invalid_argument("planned_trajectory_topic must not be empty");
+    }
+    validate_positive_duration(planner_stale_timeout_s_, "planner_stale_timeout_s");
+    if (planner_stale_timeout_s_ > 10.0) {
+      throw std::invalid_argument("planner_stale_timeout_s exceeds the safety limit");
+    }
+    if (mission_managed_landing_ && !use_planned_trajectory_) {
+      throw std::invalid_argument(
+              "mission_managed_landing requires use_planned_trajectory");
+    }
     if (position_timeout_s_ >= stable_time_s_) {
       throw std::invalid_argument("position_timeout_s must be shorter than stable_time_s");
     }
@@ -200,8 +455,26 @@ private:
       case State::taking_off:
         track_takeoff(now);
         break;
+      case State::waiting_for_planner:
+        wait_for_planner(now);
+        break;
       case State::inspecting:
-        track_inspection_waypoint(now);
+        if (use_planned_trajectory_) {
+          if (insertion_hold_active_) {
+            if (!insertion_hold_target_.has_value()) {
+              abort_or_land("dynamic blocker insertion hold has no valid target");
+              break;
+            }
+            publish_position_setpoint(insertion_hold_target_.value());
+            if (elapsed_seconds(insertion_hold_started_at_, now) > command_timeout_s_) {
+              abort_or_land("dynamic blocker insertion hold timed out");
+            }
+          } else {
+            track_planned_trajectory(now);
+          }
+        } else {
+          track_inspection_waypoint(now);
+        }
         break;
       case State::returning_home:
         track_return_home(now);
@@ -313,10 +586,123 @@ private:
     waypoint_tracker_.reset();
     current_waypoint_index_ = 0;
     target_started_at_ = now;
-    state_ = State::inspecting;
-    RCLCPP_INFO(
-      get_logger(), "Takeoff target reached; starting waypoint 1/%zu",
-      inspection_targets_.size());
+    if (use_planned_trajectory_) {
+      state_ = State::waiting_for_planner;
+      RCLCPP_INFO(get_logger(), "Takeoff target reached; waiting for a fresh planner trajectory");
+    } else {
+      state_ = State::inspecting;
+      RCLCPP_INFO(
+        get_logger(), "Takeoff target reached; starting waypoint 1/%zu",
+        inspection_targets_.size());
+    }
+  }
+
+  void wait_for_planner(const WaypointTracker::Clock::time_point now)
+  {
+    if (!flight_control_is_valid()) {
+      return;
+    }
+    if (planner_execution_is_safe(now)) {
+      planner_hold_active_ = false;
+      planner_hold_target_.reset();
+      begin_planned_execution(now);
+      return;
+    }
+    hold_for_planner(now);
+    if (elapsed_seconds(planner_hold_started_at_, now) > segment_timeout_s_) {
+      abort_or_land("timed out waiting for a fresh planner trajectory");
+    }
+  }
+
+  void track_planned_trajectory(const WaypointTracker::Clock::time_point now)
+  {
+    if (!flight_control_is_valid()) {
+      return;
+    }
+    if (!planner_execution_is_safe(now)) {
+      hold_for_planner(now);
+      if (elapsed_seconds(planner_hold_started_at_, now) > segment_timeout_s_) {
+        abort_or_land("planner trajectory or map remained unsafe during hold");
+      }
+      return;
+    }
+    planner_hold_active_ = false;
+    planner_hold_target_.reset();
+    auto & snapshot = latest_planned_trajectory_.value();
+    if (snapshot.message.trajectory.points.empty()) {
+      abort_or_land("planner supplied an empty trajectory");
+      return;
+    }
+
+    const double elapsed = elapsed_seconds(snapshot.execution_started_at, now);
+    if (!std::isfinite(elapsed) || elapsed < 0.0 ||
+      elapsed > trajectory_duration_s(snapshot) + segment_timeout_s_)
+    {
+      abort_or_land("planned trajectory execution timed out");
+      return;
+    }
+
+    while (snapshot.point_index + 1U < snapshot.message.trajectory.points.size() &&
+      trajectory_point_time_s(snapshot.message.trajectory.points[snapshot.point_index + 1U]) <=
+      elapsed)
+    {
+      ++snapshot.point_index;
+    }
+    if (snapshot.point_index != tracked_point_index_ ||
+      snapshot.message.trajectory_id != tracked_trajectory_id_)
+    {
+      waypoint_tracker_.reset();
+      tracked_point_index_ = snapshot.point_index;
+      tracked_trajectory_id_ = snapshot.message.trajectory_id;
+      target_started_at_ = now;
+    }
+
+    const auto & point = snapshot.message.trajectory.points[snapshot.point_index];
+    const Position3D target = map_enu_to_ned(
+      {
+        point.transforms.front().translation.x,
+        point.transforms.front().translation.y,
+        point.transforms.front().translation.z});
+    publish_planned_setpoint(point);
+
+    if (snapshot.point_index + 1U == snapshot.message.trajectory.points.size() &&
+      waypoint_tracker_.update(current_position_, target, now))
+    {
+      record_settled_error(target);
+      if (mission_managed_landing_) {
+        if (!planned_endpoint_reached_) {
+          planned_endpoint_reached_ = true;
+          RCLCPP_INFO(
+            get_logger(),
+            "Planned trajectory endpoint reached; holding for the mission manager");
+        }
+      } else {
+        RCLCPP_INFO(get_logger(), "Planned trajectory endpoint reached; requesting landing");
+        request_landing();
+      }
+    }
+  }
+
+  void hold_for_planner(const WaypointTracker::Clock::time_point now)
+  {
+    if (!planner_hold_active_) {
+      planner_hold_active_ = true;
+      planner_hold_started_at_ = now;
+      planner_hold_target_ = current_position_;
+    }
+    publish_position_setpoint(planner_hold_target_.value());
+  }
+
+  static double trajectory_point_time_s(
+    const trajectory_msgs::msg::MultiDOFJointTrajectoryPoint & point)
+  {
+    return static_cast<double>(point.time_from_start.sec) +
+           static_cast<double>(point.time_from_start.nanosec) / 1e9;
+  }
+
+  static double trajectory_duration_s(const PlannedTrajectorySnapshot & snapshot)
+  {
+    return trajectory_point_time_s(snapshot.message.trajectory.points.back());
   }
 
   void track_inspection_waypoint(const WaypointTracker::Clock::time_point now)
@@ -596,16 +982,51 @@ private:
     setpoint.velocity = {unused, unused, unused};
     setpoint.acceleration = {unused, unused, unused};
     setpoint.jerk = {unused, unused, unused};
-    setpoint.yaw = 0.0F;
+    setpoint.yaw = commanded_yaw_rad_;
     setpoint.yawspeed = unused;
     setpoint.timestamp = timestamp_us();
     trajectory_publisher_->publish(setpoint);
   }
 
-  void publish_offboard_heartbeat()
+  void publish_planned_setpoint(
+    const trajectory_msgs::msg::MultiDOFJointTrajectoryPoint & point)
+  {
+    publish_offboard_heartbeat(true, true, true);
+    const auto & transform = point.transforms.front();
+    const auto & velocity = point.velocities.front().linear;
+    const auto & acceleration = point.accelerations.front().linear;
+    const Position3D position = map_enu_to_ned(
+      {
+        transform.translation.x, transform.translation.y, transform.translation.z});
+    const Position3D ned_velocity = map_enu_to_ned({velocity.x, velocity.y, velocity.z});
+    const Position3D ned_acceleration = map_enu_to_ned(
+      {
+        acceleration.x, acceleration.y, acceleration.z});
+    px4_msgs::msg::TrajectorySetpoint setpoint{};
+    setpoint.position = {
+      static_cast<float>(position.x), static_cast<float>(position.y),
+      static_cast<float>(position.z)};
+    setpoint.velocity = {
+      static_cast<float>(ned_velocity.x), static_cast<float>(ned_velocity.y),
+      static_cast<float>(ned_velocity.z)};
+    setpoint.acceleration = {
+      static_cast<float>(ned_acceleration.x), static_cast<float>(ned_acceleration.y),
+      static_cast<float>(ned_acceleration.z)};
+    const float unused = std::numeric_limits<float>::quiet_NaN();
+    setpoint.jerk = {unused, unused, unused};
+    setpoint.yaw = commanded_yaw_rad_;
+    setpoint.yawspeed = unused;
+    setpoint.timestamp = timestamp_us();
+    trajectory_publisher_->publish(setpoint);
+  }
+
+  void publish_offboard_heartbeat(
+    const bool position = true, const bool velocity = false, const bool acceleration = false)
   {
     px4_msgs::msg::OffboardControlMode control_mode{};
-    control_mode.position = true;
+    control_mode.position = position;
+    control_mode.velocity = velocity;
+    control_mode.acceleration = acceleration;
     control_mode.timestamp = timestamp_us();
     offboard_mode_publisher_->publish(control_mode);
   }
@@ -643,6 +1064,11 @@ private:
   const double landing_timeout_s_;
   const double position_timeout_s_;
   const double status_timeout_s_;
+  const std::string map_frame_;
+  const bool use_planned_trajectory_;
+  const bool mission_managed_landing_;
+  const std::string planned_trajectory_topic_;
+  const double planner_stale_timeout_s_;
   const std::vector<double> waypoint_offsets_xy_;
 
   WaypointTracker waypoint_tracker_;
@@ -652,6 +1078,8 @@ private:
   Position3D takeoff_target_{};
   std::vector<Position3D> inspection_targets_;
   std::size_t current_waypoint_index_{0};
+  std::uint64_t tracked_trajectory_id_{0U};
+  std::size_t tracked_point_index_{std::numeric_limits<std::size_t>::max()};
   int warmup_counter_{0};
   std::uint8_t arming_state_{0};
   std::uint8_t nav_state_{0};
@@ -670,7 +1098,20 @@ private:
   double settled_error_sum_m_{0.0};
   double settled_error_max_m_{0.0};
   std::size_t settled_error_count_{0};
+  float commanded_yaw_rad_{0.0F};
   std::string failure_reason_;
+  bool planner_status_received_{false};
+  bool planner_status_safe_{false};
+  bool planner_hold_active_{false};
+  bool insertion_hold_active_{false};
+  bool planner_map_fresh_{false};
+  bool planner_trajectory_valid_{false};
+  bool planned_endpoint_reached_{false};
+  std::uint8_t planner_state_{drone_interfaces::msg::PlannerStatus::WAITING_FOR_MAP};
+  std::uint64_t planner_status_trajectory_id_{0U};
+  std::optional<PlannedTrajectorySnapshot> latest_planned_trajectory_;
+  std::optional<Position3D> planner_hold_target_;
+  std::optional<Position3D> insertion_hold_target_;
   WaypointTracker::Clock::time_point node_started_at_{WaypointTracker::Clock::now()};
   WaypointTracker::Clock::time_point state_entered_at_{node_started_at_};
   WaypointTracker::Clock::time_point target_started_at_{node_started_at_};
@@ -679,6 +1120,9 @@ private:
   WaypointTracker::Clock::time_point last_status_received_at_{node_started_at_};
   WaypointTracker::Clock::time_point last_land_status_received_at_{node_started_at_};
   WaypointTracker::Clock::time_point disarm_observed_at_{node_started_at_};
+  WaypointTracker::Clock::time_point planner_status_received_at_{node_started_at_};
+  WaypointTracker::Clock::time_point planner_hold_started_at_{node_started_at_};
+  WaypointTracker::Clock::time_point insertion_hold_started_at_{node_started_at_};
 
   rclcpp::Publisher<px4_msgs::msg::OffboardControlMode>::SharedPtr offboard_mode_publisher_;
   rclcpp::Publisher<px4_msgs::msg::TrajectorySetpoint>::SharedPtr trajectory_publisher_;
@@ -688,6 +1132,13 @@ private:
   rclcpp::Subscription<px4_msgs::msg::VehicleLandDetected>::SharedPtr
     land_detected_subscription_;
   rclcpp::Subscription<px4_msgs::msg::VehicleCommandAck>::SharedPtr command_ack_subscription_;
+  rclcpp::Subscription<drone_interfaces::msg::PlannedTrajectory>::SharedPtr
+    planned_trajectory_subscription_;
+  rclcpp::Subscription<drone_interfaces::msg::PlannerStatus>::SharedPtr
+    planner_status_subscription_;
+  rclcpp::Subscription<drone_interfaces::msg::MissionCommand>::SharedPtr
+    mission_command_subscription_;
+  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr insertion_hold_subscription_;
   rclcpp::TimerBase::SharedPtr timer_;
 };
 

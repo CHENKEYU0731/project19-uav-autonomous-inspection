@@ -1,6 +1,6 @@
 # Colcon workspace source directory
 
-ROS 2 Humble 安装并验收后，使用 `ros2 pkg create` 在此目录创建项目功能包。计划包名以项目方案为准：
+ROS 2 Humble 安装并验收后，本目录包含以下项目自有功能包：
 
 - `drone_bringup`
 - `drone_perception`
@@ -10,7 +10,7 @@ ROS 2 Humble 安装并验收后，使用 `ros2 pkg create` 在此目录创建项
 - `drone_interfaces`
 - `drone_sim`
 
-功能包随里程碑首次实现时创建，不预建空壳包：
-
-- M1 已创建 `drone_controller` 和 `drone_bringup`
-- 其余功能包在对应里程碑实现时创建，并同时加入最小构建测试
+M1-M4 已按里程碑逐步创建全部七个包，没有保留空壳包。固定上游
+`px4_msgs` 和 `px4_ros_com` 也由 `dependencies.repos` 导入本目录，但被
+`.gitignore` 排除，不属于项目自有源码。各包职责和数据契约见
+`../docs/architecture.md`。

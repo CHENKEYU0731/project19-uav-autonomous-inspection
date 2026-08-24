@@ -11,6 +11,7 @@ px4_startup_script="${2:-}"
 build_directory="${px4_directory}/build/px4_sitl_default"
 px4_binary="${build_directory}/bin/px4"
 rootfs_directory="${build_directory}/rootfs"
+data_directory="${px4_directory}/ROMFS/px4fmu_common"
 px4_pid=""
 
 stop_px4_process_group()
@@ -102,10 +103,11 @@ fi
 cd "${rootfs_directory}"
 if [[ -n "${px4_startup_script}" ]]; then
   PX4_SIM_MODEL="${PX4_SIM_MODEL:-gz_x500}" GZ_IP="${GZ_IP:-127.0.0.1}" \
-    setsid "${px4_binary}" -d -s "${px4_startup_script}" &
+    setsid "${px4_binary}" -d -s "${px4_startup_script}" \
+      "${data_directory}" &
 else
   PX4_SIM_MODEL="${PX4_SIM_MODEL:-gz_x500}" GZ_IP="${GZ_IP:-127.0.0.1}" \
-    setsid "${px4_binary}" -d &
+    setsid "${px4_binary}" -d "${data_directory}" &
 fi
 px4_pid="$!"
 wait "${px4_pid}"

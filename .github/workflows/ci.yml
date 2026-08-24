@@ -1,0 +1,54 @@
+name: project-ci
+
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-lint:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install ROS 2 Humble
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: humble
+
+      - name: Install project dependencies
+        shell: bash
+        run: |
+          sudo curl -fsSL --retry 5 --retry-all-errors --connect-timeout 15 \
+            https://packages.osrfoundation.org/gazebo.gpg \
+            -o /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable jammy main" \
+            | sudo tee /etc/apt/sources.list.d/gazebo-stable.list >/dev/null
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-colcon-common-extensions \
+            python3-pil \
+            python3-rosdep \
+            python3-vcstool \
+            ros-humble-ament-lint-common \
+            ros-humble-ros-gzharmonic
+          git config --global http.version HTTP/1.1
+          vcs import --shallow --retry 5 . < .github/ci.repos
+          for attempt in {1..5}; do
+            if rosdep update; then break; fi
+            if [[ "${attempt}" -eq 5 ]]; then exit 1; fi
+            sleep "$((attempt * 5))"
+          done
+          rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+
+      - name: Build, test, and lint project packages
+        shell: bash
+        run: bash scripts/ci.sh

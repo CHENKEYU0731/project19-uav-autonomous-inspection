@@ -1,0 +1,57 @@
+{
+  "accepted": true,
+  "video": {
+    "duration_s": 124.667,
+    "height": 1080,
+    "path": "/opt/project19/docs/assets/m4-inspection-demo.mp4",
+    "sample_times_s": [
+      18.70005,
+      62.3335,
+      105.96695
+    ],
+    "sha256": "f09f73feb9a4a8254d9090b8075ce476bf70a92f6dbcef03a5c924bf9b7c7f88",
+    "width": 2400
+  },
+  "visual": {
+    "left_motion_deltas": [
+      0.5506273148148148,
+      0.3502600308641975
+    ],
+    "right_motion_deltas": [
+      6.374143518518518,
+      5.064298353909464
+    ],
+    "samples": [
+      {
+        "left": {
+          "mean_luma": 200.9220663580247,
+          "stddev_luma": 49.44641873825452
+        },
+        "right": {
+          "mean_luma": 140.17558564814814,
+          "stddev_luma": 98.82488287879387
+        }
+      },
+      {
+        "left": {
+          "mean_luma": 200.70969598765433,
+          "stddev_luma": 49.53966321339366
+        },
+        "right": {
+          "mean_luma": 145.97854706790125,
+          "stddev_luma": 95.53924395881684
+        }
+      },
+      {
+        "left": {
+          "mean_luma": 200.71644367283952,
+          "stddev_luma": 49.52682289514549
+        },
+        "right": {
+          "mean_luma": 147.12882330246913,
+          "stddev_luma": 95.05104796160825
+        }
+      }
+    ]
+  }
+}

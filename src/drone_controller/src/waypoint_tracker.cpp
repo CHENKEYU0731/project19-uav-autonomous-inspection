@@ -1,3 +1,17 @@
+// Copyright 2026 Project19 contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #include "drone_controller/waypoint_tracker.hpp"
 
 #include <cmath>
@@ -16,6 +30,15 @@ Position3D make_ned_target(
     home.x + north_offset,
     home.y + east_offset,
     home.z - altitude_m,
+  };
+}
+
+Position3D map_enu_to_ned(const Position3D & map_enu_position)
+{
+  return {
+    map_enu_position.y,
+    map_enu_position.x,
+    -map_enu_position.z,
   };
 }
 
