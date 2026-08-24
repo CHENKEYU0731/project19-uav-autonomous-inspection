@@ -10,7 +10,7 @@
 - Current engineering evidence: `docs/m5-engineering-audit.md`
 
 ## Current Milestone
-- M0 through M4 are accepted. Work only on M5 until every M5 acceptance item has direct evidence.
+- M0 through M5 are accepted. Treat M5 as closed unless the project plan is explicitly revised.
 - Update `README.md` and the current milestone audit when evidence changes.
 - Do not mark an acceptance item complete from configuration alone; run its stated command.
 
@@ -36,7 +36,7 @@
 | Check PX4 odometry | `ros2 topic echo --once /fmu/out/vehicle_odometry` |
 | Run M1 mission | `ros2 launch drone_bringup waypoint_mission.launch.py` |
 | Test project packages | `colcon test --packages-select drone_controller drone_bringup` |
-| Run current M5 gate | `bash scripts/ci.sh` |
+| Run engineering gate | `bash scripts/ci.sh` |
 
 ## Change Rules
 - Prefer the smallest change that advances the current acceptance gate.
@@ -44,4 +44,4 @@
 - Check PX4 primary documentation before changing version combinations.
 - Add focused tests with every core behavior change.
 - Do not claim simulator, flight, or timing results without command output or recorded artifacts.
-- Preserve the verified M2 map/TF, M3 planner/controller, and M4 mission/evidence contracts while implementing M5.
+- Preserve the verified M2 map/TF, M3 planner/controller, M4 mission/evidence, and M5 engineering contracts in future work.
