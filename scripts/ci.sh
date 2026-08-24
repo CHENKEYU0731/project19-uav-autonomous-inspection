@@ -29,6 +29,9 @@ set -u
 cd "${PROJECT_ROOT}"
 
 colcon build --symlink-install --event-handlers console_direct+
+set +u
+source "${PROJECT_ROOT}/install/setup.bash"
+set -u
 colcon test \
   --packages-select "${project_packages[@]}" \
   --event-handlers console_direct+

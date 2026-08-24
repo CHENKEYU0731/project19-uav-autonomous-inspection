@@ -267,6 +267,11 @@ def test_ci_runs_build_project_tests_ament_lint_and_cleanliness_gate():
     assert "bash scripts/ci.sh" in workflow
     assert "colcon build --symlink-install" in ci_script
     assert "colcon test" in ci_script
+    workspace_setup = 'source "${PROJECT_ROOT}/install/setup.bash"'
+    assert ci_script.index("colcon build --symlink-install") < ci_script.index(
+        workspace_setup
+    )
+    assert ci_script.index(workspace_setup) < ci_script.index("colcon test")
     assert "AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1" in ci_script
     assert "ament_cppcheck src/drone_*/include src/drone_*/src" in ci_script
     assert "--filters=-legal/copyright,-build/include_order" in ci_script
