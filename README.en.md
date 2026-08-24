@@ -11,10 +11,11 @@ Gazebo Harmonic. The authoritative scope and acceptance gates are defined in
 M0 through M4 have direct local evidence and are accepted. The current
 milestone is **M5 - Engineering closeout**. Container, CI, documentation, and
 repository quality gates are implemented. GitHub Actions run
-[`32708449299`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32708449299)
-is green for commit `8dd4985`, and the final committed repository passed its
-cleanliness gate. M5 remains unaccepted because fresh-machine Docker evidence
-does not exist and `main` is not protected.
+[`32711356963`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32711356963)
+is green for commit `8055d61`, and the final committed repository passed its
+cleanliness gate. The public repository now has verified `main` branch
+protection. M5 remains unaccepted only because fresh-machine Docker evidence
+does not exist.
 
 A no-cache, pull-enabled build of the then-current 133 candidate paths completed in
 3,294 seconds after the WSL VHD was moved to
@@ -31,10 +32,10 @@ existing-machine results and do not replace fresh-machine evidence. The remote
 run built all nine packages, passed 302 project-owned tests and all eight Ament
 lint stages, and accepted 131 candidate paths with a clean worktree.
 
-The repository remains private. GitHub reports `main` as unprotected, and both
-the branch-protection and repository-rulesets APIs return `403`, requiring a
-public repository or GitHub Pro. Repository visibility was not changed to work
-around that external limitation.
+After explicit user authorization, the repository was made public so GitHub
+Free branch protection could be enabled. `main` now requires pull requests,
+the strict `build-test-lint` check, and up-to-date branches; administrators are
+included, while force pushes and branch deletion are disabled.
 
 After the documentation sync and one test-format fix, a cached rebuild of that
 133-path context completed in 639 seconds and produced image

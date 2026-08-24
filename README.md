@@ -16,9 +16,9 @@ build/test/ament lint 门禁、英文 README、架构与模块说明、Docker �
 2026-08-24 已从当时的 133 个候选路径执行 `--no-cache --pull` Docker 构建，并用
 新镜像完成工具冒烟和完整无界面 M4 Compose 回归。清除 3 个已归档的根目录过程便笺
 并加强整洁门禁后，当时 130 个候选路径又通过本地统一 CI。仓库现已推送到 GitHub，
-提交 `8dd4985` 的 Actions 运行 `32708449299` 已全绿，最终 131 个候选路径通过严格
-整洁门禁。但该机器不是全新环境，且当前私有仓库因 GitHub 账户套餐限制无法启用
-分支保护，因此仍不能宣称“全新机器 30 分钟复现”或“CI 全绿且 main 受保护”。
+提交 `8055d61` 的 Actions 运行 `32711356963` 已全绿，最终 131 个候选路径通过严格
+整洁门禁。仓库经用户授权改为公开后，`main` 分支保护已通过 API 配置并验证。但该
+机器不是全新环境，因此仍不能宣称“全新机器 30 分钟复现”。
 当前边界见
 [`docs/m5-engineering-audit.md`](docs/m5-engineering-audit.md)。
 
@@ -531,8 +531,8 @@ rosbag、PX4 ULog、视频、临时文件、外部源码树、超过 10 MiB 的�
 固定上游 `px4_ros_com` 的已知 lint 失败不冒充项目自有结果。
 `.github/workflows/ci.yml` 已通过 SHA-256 校验后的官方 `actionlint v1.7.12` 静态
 检查。GitHub Actions 运行
-[`32708449299`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32708449299)
-在提交 `8dd4985` 上成功：9 个包构建完成，七个自有包共 302 项测试零失败，八类
+[`32711356963`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32711356963)
+在提交 `8055d61` 上成功：9 个包构建完成，七个自有包共 302 项测试零失败，八类
 Ament lint 全部通过，131 个候选路径通过严格整洁门禁且工作树干净。
 
 2026-08-24 清除根目录 `findings.md`、`progress.md` 和 `task_plan.md` 三个已归档的
@@ -568,9 +568,8 @@ ID 为 `sha256:7911098c4d33ad5e4435c0d61a6d8125503a63775fa3c755a61bb98c9111042b`
 当前 M5 验收状态：
 
 - [ ] 全新机器按 Docker 指南在 30 分钟内复现演示
-- [ ] GitHub Actions 全绿且 `main` 分支受保护
+- [x] GitHub Actions 全绿且 `main` 分支受保护
 - [x] 最终提交后的仓库通过整洁门禁且提交历史清晰
 
-第二项仅完成“CI 全绿”部分。GitHub API 已确认 `main` 的 `protected` 为 `false`；传统
-分支保护和 Rulesets API 均返回 `403`，要求将仓库公开或升级 GitHub Pro。仓库保持
-私有，未擅自改变可见性。全新机器复现证据仍不存在。
+`main` 保护要求经 PR、通过 `build-test-lint` 且合并前保持最新；管理员同样受约束，
+强推和删除均被禁止。全新机器复现证据仍不存在，因此 M5 整体尚未验收。

@@ -7,10 +7,10 @@
 M5 的容器、Compose、CI、双语文档、架构说明、复现指南和仓库整洁门禁已进入候选
 状态，但 M5 尚未验收。当前 WSL 环境已从隔离源码上下文执行无缓存 Docker build，
 并用新镜像直接完成工具冒烟和完整 Compose M4 回归；这仍是已有 Docker 环境的
-本机验证，不是独立全新机器。仓库现已推送到私有 GitHub remote，提交 `8dd4985`
-的 Actions 运行 `32708449299` 已成功，最终提交后的严格整洁门禁也已通过。`main`
-仍未受保护：GitHub 对传统分支保护和 Rulesets API 均返回 `403`，要求公开仓库或
-升级 GitHub Pro。因此 M5 只验收“仓库整洁且历史清晰”，其余两项保持未勾选。
+本机验证，不是独立全新机器。仓库现已推送到 GitHub，提交 `8055d61` 的 Actions
+运行 `32711356963` 已成功，最终提交后的严格整洁门禁也已通过。经用户明确授权将
+仓库改为公开后，`main` 分支保护已配置并通过 API 验证。因此 M5 已验收 CI/分支
+保护与仓库整洁两项，仅“全新机器 30 分钟复现”保持未勾选。
 
 早期 133 路径无缓存构建曾因 E 盘空间耗尽而在镜像导出阶段失败。2026-08-24 使用
 官方 `wsl --manage Ubuntu-22.04 --move` 将完整 VHD 迁移到
@@ -25,7 +25,7 @@ M5 的容器、Compose、CI、双语文档、架构说明、复现指南和仓�
 |---|---|---|
 | 容器镜像 | `Dockerfile`, `.dockerignore`, `docker/entrypoint.sh`, `LICENSE` | 本机镜像构建和镜像内工具冒烟均通过；尚无全新机器证据 |
 | 一键编排 | `compose.yaml` | 默认服务已完成完整无界面 M4；GUI 为显式 profile |
-| CI | `.github/workflows/ci.yml`, `.github/ci.repos`, `.github/ament_flake8.ini`, `scripts/ci.sh` | GitHub Actions 运行 `32708449299` 在提交 `8dd4985` 上成功 |
+| CI | `.github/workflows/ci.yml`, `.github/ci.repos`, `.github/ament_flake8.ini`, `scripts/ci.sh` | GitHub Actions 运行 `32711356963` 在提交 `8055d61` 上成功，`main` 保护已验证 |
 | 仓库门禁 | `scripts/check_repository_cleanliness.py` | 拒绝脏工作树、生成目录、外部源码树、日志/rosbag/ULog/视频/临时格式和超过 10 MiB 的候选文件 |
 | 英文入口 | `README.en.md` | 覆盖架构、Docker、原生构建、运行、测试、证据和安全边界 |
 | 架构/模块 | `docs/architecture.md` | Mermaid 数据流、七个自有包职责和安全契约 |
@@ -54,11 +54,11 @@ schema、PyYAML 的 GitHub-compatible 布尔解析和 `jsonschema` 的补充结�
 
 ## GitHub 与最终仓库证据
 
-2026-08-24，私有仓库
+2026-08-24，GitHub 仓库
 `CHENKEYU0731/project19-uav-autonomous-inspection` 的 GitHub Actions 运行
-[`32708449299`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32708449299)
-在提交 `8dd4985e719374c673df0bd9a667bf3995a7073c` 上成功，job
-`build-test-lint` 用时 `18m56s`。直接日志显示：
+[`32711356963`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32711356963)
+在提交 `8055d61386d2c93539bdfe442c9096a30685362f` 上成功，job
+`build-test-lint` 用时 `11m25s`。直接日志显示：
 
 - 9 个包在 `13min 13s` 内构建完成
 - 七个自有包共 `0 + 0 + 19 + 40 + 10 + 6 + 227 = 302` 项测试，零错误、零失败、零跳过
@@ -70,10 +70,10 @@ schema、PyYAML 的 GitHub-compatible 布尔解析和 `jsonschema` 的补充结�
 显式使用 `.github/ament_flake8.ini`，保留 ROS 2 Humble 默认 Ament Flake8 基线，
 仅排除基础镜像不存在的可选插件规则 `Q000`、`I100`、`I101` 和 `CNL100`。
 
-远端 `main` 在成功运行后返回 `protected: false`。传统 branch protection API 和
-repository rulesets API 均返回 HTTP `403`：当前账户必须将仓库公开或升级 GitHub
-Pro 才能启用。仓库按既定要求保持私有，未以改变可见性绕过限制，因此“CI 全绿且
-`main` 受保护”仍是部分完成，不能勾选。
+私有仓库最初对 branch protection 和 rulesets API 返回 HTTP `403`。用户明确授权
+在需要时公开仓库后，仓库可见性改为 `PUBLIC`，随后保护 API 返回成功。复核结果为：
+`main protected: true`；要求通过 PR；必需检查为 `build-test-lint` 且 `strict: true`；
+`enforce_admins: true`；`allow_force_pushes: false`；`allow_deletions: false`。
 
 提交历史从 M0 至 M4 保留明确里程碑标签 `v0.1-m0` 至 `v0.5-m4`；M3/M4 标签指向
 同一可验证整合快照，没有伪造无法重建的边界。后续三个 CI 修复提交各自对应一次
@@ -257,14 +257,14 @@ query、fragment，从 SCP 风格 origin 去除用户名，避免凭据泄漏或
 | 方案验收项 | 当前状态 | 缺失的直接证据 |
 |---|---|---|
 | 全新机器 Docker 30 分钟内复现 | 未验收 | 独立干净机器的版本、时间戳、完整构建/任务输出、bag 与分析器结果 |
-| CI 全绿且 `main` 受保护 | 部分完成 | CI 已全绿；私有仓库受账户套餐限制，`main` 仍未保护 |
-| 仓库整洁且历史清晰 | 已验收 | 运行 `32708449299` 对最终提交输出 `131 candidate paths, clean worktree`；里程碑标签与修复提交边界清晰 |
+| CI 全绿且 `main` 受保护 | 已验收 | 运行 `32711356963` 成功；保护 API 确认严格状态检查、PR、管理员约束及强推/删除禁用 |
+| 仓库整洁且历史清晰 | 已验收 | 运行 `32711356963` 对提交 `8055d61` 输出 `131 candidate paths, clean worktree`；里程碑标签与修复提交边界清晰 |
 
 ## 不得外推的结论
 
 - 本次无缓存构建仍运行在已有 Docker/WSL 的本机，且使用第三方镜像代理，不等于
   独立全新机器从 clone 开始复现成功
-- GitHub Actions 全绿不等于分支已受保护；当前 API 直接证明 `main` 未保护
+- GitHub Actions 与保护设置只证明当前远端工程门禁，不证明另一台机器可复现仿真
 - `--allow-dirty` 只用于检查已跟踪文件策略，不满足最终“仓库整洁”门禁
 - 新镜像的本机运行成功不能证明另一台机器的网络、驱动和 Docker 环境可复现
 - 当时 133 路径的本机构建和 M4 回归通过，仍不能证明独立机器能在相同网络、驱动
