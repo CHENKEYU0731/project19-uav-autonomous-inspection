@@ -44,7 +44,7 @@ ament_copyright src/drone_* scripts
 ament_cppcheck src/drone_*/include src/drone_*/src
 ament_cpplint --filters=-legal/copyright,-build/include_order src/drone_*
 ament_uncrustify src/drone_*
-ament_flake8 src/drone_* scripts
+ament_flake8 --config "${PROJECT_ROOT}/.github/ament_flake8.ini" src/drone_* scripts
 ament_pep257 src/drone_* scripts
 ament_lint_cmake src/drone_*
 ament_xmllint src/drone_* scripts/m4-openbox.xml

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import configparser
 import importlib.util
 import os
 from pathlib import Path
@@ -263,6 +264,7 @@ def test_bringup_install_tree_contains_no_generated_python_bytecode():
 def test_ci_runs_build_project_tests_ament_lint_and_cleanliness_gate():
     workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text()
     ci_script = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
+    flake8_config = (PROJECT_ROOT / ".github" / "ament_flake8.ini").read_text()
     assert "actions/checkout@v5" in workflow
     assert "bash scripts/ci.sh" in workflow
     assert "colcon build --symlink-install" in ci_script
@@ -275,6 +277,14 @@ def test_ci_runs_build_project_tests_ament_lint_and_cleanliness_gate():
     assert "AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1" in ci_script
     assert "ament_cppcheck src/drone_*/include src/drone_*/src" in ci_script
     assert "--filters=-legal/copyright,-build/include_order" in ci_script
+    assert '--config "${PROJECT_ROOT}/.github/ament_flake8.ini"' in ci_script
+    assert "import-order-style = google" in flake8_config
+    assert "max-line-length = 99" in flake8_config
+    parsed_flake8_config = configparser.ConfigParser()
+    parsed_flake8_config.read_string(flake8_config)
+    ignored_rules = parsed_flake8_config["flake8"]["extend-ignore"].split(",")
+    for rule in ("Q000", "I100", "I101", "CNL100"):
+        assert rule in ignored_rules
     for linter in (
         "ament_copyright",
         "ament_cppcheck",
