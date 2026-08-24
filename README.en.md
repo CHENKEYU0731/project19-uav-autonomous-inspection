@@ -10,9 +10,11 @@ Gazebo Harmonic. The authoritative scope and acceptance gates are defined in
 
 M0 through M4 have direct local evidence and are accepted. The current
 milestone is **M5 - Engineering closeout**. Container, CI, documentation, and
-repository quality gates are implemented, but M5 remains unaccepted until a
-fresh-machine Docker reproduction, a green GitHub Actions run, and `main`
-branch protection have direct external evidence.
+repository quality gates are implemented. GitHub Actions run
+[`32708449299`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32708449299)
+is green for commit `8dd4985`, and the final committed repository passed its
+cleanliness gate. M5 remains unaccepted because fresh-machine Docker evidence
+does not exist and `main` is not protected.
 
 A no-cache, pull-enabled build of the then-current 133 candidate paths completed in
 3,294 seconds after the WSL VHD was moved to
@@ -25,7 +27,14 @@ vehicle landed and disarmed. After three archived root-level working notes were
 removed and the cleanliness policy was tightened, the current 130 candidate
 paths passed the local CI entrypoint: all 301 project-owned tests, including 48
 M5 engineering tests, and all eight Ament lint stages passed. These are
-existing-machine results and do not replace fresh-machine or GitHub evidence.
+existing-machine results and do not replace fresh-machine evidence. The remote
+run built all nine packages, passed 302 project-owned tests and all eight Ament
+lint stages, and accepted 131 candidate paths with a clean worktree.
+
+The repository remains private. GitHub reports `main` as unprotected, and both
+the branch-protection and repository-rulesets APIs return `403`, requiring a
+public repository or GitHub Pro. Repository visibility was not changed to work
+around that external limitation.
 
 After the documentation sync and one test-format fix, a cached rebuild of that
 133-path context completed in 639 seconds and produced image
@@ -184,7 +193,8 @@ The cleanliness gate specifically rejects stale root-level `findings.md`,
 documents with those names below subdirectories.
 The official `actionlint v1.7.12` binary, verified against its published
 SHA-256 checksum, reports no diagnostics for `.github/workflows/ci.yml`. This
-static result is not evidence that GitHub Actions has run.
+static result is supplemented by the successful GitHub Actions run linked in
+the project status above.
 
 ## Evidence
 
