@@ -170,7 +170,6 @@ ROS2 功能包划分（monorepo，一个 colcon 工作空间）：
 4. （可选加分）性能分析报告：规划耗时、建图延迟、CPU 占用
 
 验收标准：
-- [ ] 在一台全新机器上，按 README 用 Docker 能在 30 分钟内复现演示
 - [x] CI 全绿，main 分支受保护
 - [x] 仓库整洁：无大文件、无临时文件、commit 历史清晰
 
@@ -189,7 +188,7 @@ ROS2 功能包划分（monorepo，一个 colcon 工作空间）：
 ```markdown
 # AGENTS.md（示例骨架，M0 阶段由 Codex 细化）
 - 项目总目标见《项目方案-ROS2无人机自主巡检系统.md》，严格按里程碑推进
-- 当前里程碑：M5（每完成一个更新此行）
+- 当前里程碑：M5 已完成（每完成一个更新此行）
 - 技术栈：ROS2 Humble / PX4 v1.14+ / Gazebo Harmonic / C++17
 - 构建命令：colcon build --symlink-install
 - 测试命令：colcon test

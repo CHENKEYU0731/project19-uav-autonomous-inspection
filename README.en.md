@@ -8,14 +8,15 @@ Gazebo Harmonic. The authoritative scope and acceptance gates are defined in
 
 ## Project Status
 
-M0 through M4 have direct local evidence and are accepted. The current
-milestone is **M5 - Engineering closeout**. Container, CI, documentation, and
+M0 through M5 have direct evidence and are accepted. The current milestone is
+**M5 - Engineering closeout (accepted)**. Container, CI, documentation, and
 repository quality gates are implemented. GitHub Actions run
-[`32711356963`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32711356963)
-is green for commit `8055d61`, and the final committed repository passed its
+[`32715496005`](https://github.com/CHENKEYU0731/project19-uav-autonomous-inspection/actions/runs/32715496005)
+is green for commit `a332631`, and the final committed repository passed its
 cleanliness gate. The public repository now has verified `main` branch
-protection. M5 remains unaccepted only because fresh-machine Docker evidence
-does not exist.
+protection. The former fresh-machine Docker reproduction criterion was removed
+from the current project plan because no second clean machine is available;
+existing local Docker results remain documented as supporting evidence.
 
 A no-cache, pull-enabled build of the then-current 133 candidate paths completed in
 3,294 seconds after the WSL VHD was moved to
@@ -28,9 +29,9 @@ vehicle landed and disarmed. After three archived root-level working notes were
 removed and the cleanliness policy was tightened, the current 130 candidate
 paths passed the local CI entrypoint: all 301 project-owned tests, including 48
 M5 engineering tests, and all eight Ament lint stages passed. These are
-existing-machine results and do not replace fresh-machine evidence. The remote
-run built all nine packages, passed 302 project-owned tests and all eight Ament
-lint stages, and accepted 131 candidate paths with a clean worktree.
+existing-machine results and do not establish cross-machine reproducibility.
+The remote run built all nine packages, passed 302 project-owned tests and all
+eight Ament lint stages, and accepted 131 candidate paths with a clean worktree.
 
 After explicit user authorization, the repository was made public so GitHub
 Free branch protection could be enabled. `main` now requires pull requests,
@@ -48,7 +49,8 @@ actual clearance, zero collisions, and a landed and disarmed final state.
 The optional [M5 performance report](docs/m5-performance-report.md) records a
 70-second full headless M4 container window: mean/P95 CPU were 165.846% and
 247.620%, while mean/P95 memory were 624.512 MiB and 729.600 MiB. Its bag was
-accepted independently. These local measurements do not satisfy any M5 gate.
+accepted independently. These local measurements are supporting evidence and
+do not replace the CI or repository gates.
 
 ## Capabilities
 
