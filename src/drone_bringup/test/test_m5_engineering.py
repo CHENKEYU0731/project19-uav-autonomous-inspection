@@ -263,6 +263,7 @@ def test_bringup_install_tree_contains_no_generated_python_bytecode():
 def test_ci_runs_build_project_tests_ament_lint_and_cleanliness_gate():
     workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text()
     ci_script = (PROJECT_ROOT / "scripts" / "ci.sh").read_text()
+    assert "actions/checkout@v5" in workflow
     assert "bash scripts/ci.sh" in workflow
     assert "colcon build --symlink-install" in ci_script
     assert "colcon test" in ci_script
@@ -281,6 +282,15 @@ def test_ci_runs_build_project_tests_ament_lint_and_cleanliness_gate():
     ):
         assert linter in ci_script
     assert "check_repository_cleanliness.py" in ci_script
+
+
+def test_harmonic_install_skips_conflicting_fortress_rosdep_keys():
+    dockerfile = (PROJECT_ROOT / "Dockerfile").read_text()
+    workflow = (PROJECT_ROOT / ".github" / "workflows" / "ci.yml").read_text()
+    skip_keys = '--skip-keys "ros_gz_bridge ros_gz_interfaces ros_gz_sim"'
+
+    assert skip_keys in dockerfile
+    assert skip_keys in workflow
 
 
 def test_reproduction_protocol_times_from_clone_and_accepts_only_a_new_bag():

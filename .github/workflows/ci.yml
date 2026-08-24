@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install ROS 2 Humble
         uses: ros-tooling/setup-ros@v0.7
@@ -47,7 +47,8 @@ jobs:
             if [[ "${attempt}" -eq 5 ]]; then exit 1; fi
             sleep "$((attempt * 5))"
           done
-          rosdep install --from-paths src --ignore-src --rosdistro humble -r -y
+          rosdep install --from-paths src --ignore-src --rosdistro humble -r -y \
+            --skip-keys "ros_gz_bridge ros_gz_interfaces ros_gz_sim"
 
       - name: Build, test, and lint project packages
         shell: bash

@@ -116,6 +116,7 @@ RUN source "/opt/ros/${ROS_DISTRO}/setup.bash" \
       sleep "$((attempt * 5))"; \
     done \
     && rosdep install --from-paths src --ignore-src --rosdistro "${ROS_DISTRO}" -r -y \
+      --skip-keys "ros_gz_bridge ros_gz_interfaces ros_gz_sim" \
     && colcon build --symlink-install --event-handlers console_direct+
 
 RUN useradd --create-home --uid 1000 simulator \
